@@ -1,0 +1,48 @@
+{
+    "$schema": "https://schema.tauri.app/config/2",
+    "productName": "CosmoRisk",
+    "version": "2.0.1",
+    "identifier": "com.cosmorisk.neo",
+    "build": {
+        "beforeDevCommand": "npm run dev",
+        "devUrl": "http://localhost:1420",
+        "beforeBuildCommand": "npm run build",
+        "frontendDist": "../dist"
+    },
+    "app": {
+        "withGlobalTauri": true,
+        "windows": [
+            {
+                "title": "CosmoRisk - NEO Tracker & Deflection Simulator",
+                "width": 1400,
+                "height": 900,
+                "decorations": true,
+                "resizable": true,
+                "fullscreen": false,
+                "transparent": false
+            }
+        ],
+        "security": {
+            "csp": null
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": [
+            "msi",
+            "nsis"
+        ],
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ],
+        "publisher": "Mehmet Gümüş",
+        "copyright": "© 2025 Mehmet Gümüş. All rights reserved.",
+        "category": "Education",
+        "shortDescription": "Near-Earth Object Tracking & Deflection Simulator",
+        "longDescription": "CosmoRisk is a physics-accurate NEO tracking and deflection simulation application. Track real asteroids from NASA data, analyze impact risks, and simulate deflection missions."
+    }
+}

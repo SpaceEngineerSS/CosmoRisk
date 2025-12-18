@@ -28,10 +28,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Tauri App
+      - name: Build Tauri App (without signing)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ""
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'CosmoRisk ${{ github.ref_name }}'
@@ -46,7 +47,7 @@ jobs:
             - Trajectory preview with perturbations
             
             ### 📥 Download
-            Download the `.msi` installer for Windows below.
+            Download the `.msi` installer or `.exe` for Windows below.
             
             ### ⚠️ Windows SmartScreen
             If you see a SmartScreen warning, click "More info" → "Run anyway"
@@ -55,3 +56,4 @@ jobs:
             *Developed by [Mehmet Gümüş](https://spacegumus.com.tr)*
           releaseDraft: false
           prerelease: false
+          args: --config src-tauri/tauri.conf.release.json
