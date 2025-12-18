@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="/src/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO & Open Graph -->
+  <meta name="description"
+    content="High-fidelity Near-Earth Object tracking and deflection simulator with N-body physics, NASA API integration, and cinematic visualization." />
+  <meta name="keywords"
+    content="NEO, asteroid, simulation, orbital mechanics, planetary defense, NASA, Three.js, Tauri" />
+  <meta name="author" content="Orbital Sentinel Team" />
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Orbital Sentinel - NEO Defense Simulator" />
+  <meta property="og:description" content="Track and deflect Near-Earth Objects with physics-accurate simulation." />
+  <meta property="og:image" content="/assets/og-image.png" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Orbital Sentinel" />
+  <meta name="twitter:description" content="NEO Tracking & Deflection Simulator" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+
+  <title>Orbital Sentinel - NEO Tracker</title>
+  <script type="module" src="/src/main.ts" defer></script>
+</head>
+
+<body>
+  <!-- Three.js Canvas Container -->
+  <div id="viewport"></div>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loader-content">
+      <div class="spinner"></div>
+      <h1 class="loader-title">ORBITAL SENTINEL</h1>
+      <p class="loader-subtitle">Initializing Heliocentric Navigation System...</p>
+      <div class="loader-progress">
+        <div class="loader-bar" id="loader-bar"></div>
+      </div>
+      <p class="loader-status" id="loader-status">Loading physics engine...</p>
+    </div>
+  </div>
+
+  <!-- Main UI Overlay -->
+  <div id="ui-overlay" class="hidden">
+    <!-- Top Bar -->
+    <header id="top-bar">
+      <!-- Mobile Hamburger Menu -->
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Menu">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+
+      <div class="logo-section">
+        <div class="logo-icon">
+          <svg viewBox="0 0 40 40" width="32" height="32">
+            <circle cx="20" cy="20" r="8" fill="none" stroke="currentColor" stroke-width="2" />
+            <ellipse cx="20" cy="20" rx="18" ry="6" fill="none" stroke="currentColor" stroke-width="1"
+              transform="rotate(-20 20 20)" />
+            <circle cx="32" cy="14" r="3" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title">ORBITAL SENTINEL</span>
+          <span class="logo-subtitle">NEO Tracking System v1.0</span>
+        </div>
+      </div>
+
+      <!-- Search Bar (Desktop) -->
+      <div class="search-section">
+        <input type="text" id="asteroid-search" class="search-input" placeholder="Search asteroids...">
+        <button class="search-btn" id="btn-search">🔍</button>
+      </div>
+
+      <div class="telemetry-section">
+        <div class="telemetry-item">
+          <span class="telemetry-label">JD</span>
+          <span class="telemetry-value" id="julian-date">2451545.0</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">TIME</span>
+          <span class="telemetry-value" id="sim-time">T+0d 00:00:00</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">OBJECTS</span>
+          <span class="telemetry-value" id="object-count">3</span>
+        </div>
+        <div class="telemetry-item energy-monitor">
+          <span class="telemetry-label">ΔE</span>
+          <span class="telemetry-value" id="energy-drift">0.000e+00</span>
+        </div>
+      </div>
+
+      <div class="status-section">
+        <button class="help-btn" id="btn-help" title="Keyboard Shortcuts (?)">?</button>
+        <div class="status-indicator" id="status-indicator">
+          <span class="status-dot paused"></span>
+          <span class="status-text">PAUSED</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-nav" class="mobile-nav hidden">
+      <div class="mobile-nav-content" id="mobile-nav-content">
+        <!-- Will be populated with panel content -->
+      </div>
+    </div>
+
+    <!-- Left Panel - Control -->
+    <aside id="left-panel">
+      <div class="panel-section">
+        <h3 class="panel-title">TIME CONTROL</h3>
+        <div class="control-group">
+          <button class="control-btn" id="btn-play" title="Play/Pause">
+            <span class="btn-icon">▶</span>
+          </button>
+          <button class="control-btn" id="btn-reset" title="Reset">
+            <span class="btn-icon">↺</span>
+          </button>
+        </div>
+        <div class="slider-group">
+          <label class="slider-label">Time Scale</label>
+          <input type="range" id="time-scale" class="slider" min="1" max="6" step="1" value="3">
+          <div class="slider-value" id="time-scale-value">x1 day/s</div>
+        </div>
+        <div class="slider-group">
+          <label class="slider-label">Time Step (dt)</label>
+          <input type="range" id="time-step" class="slider" min="1" max="4" step="1" value="2">
+          <div class="slider-value" id="time-step-value">1 hour</div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="panel-title">DATA SOURCE</h3>
+        <div class="input-group">
+          <label class="input-label">NASA API Key</label>
+          <input type="password" id="api-key" class="text-input" placeholder="Enter API key...">
+        </div>
+        <button class="action-btn" id="btn-fetch-neo">
+          <span class="btn-icon">⬇</span> Fetch NEOs
+        </button>
+        <button class="action-btn secondary" id="btn-fetch-more">
+          <span class="btn-icon">+</span> Load More
+        </button>
+        <button class="action-btn secondary" id="btn-export" style="margin-top: 8px;">
+          <span class="btn-icon">📥</span> Export Data
+        </button>
+      </div>
+
+      <!-- Asteroid List -->
+      <div class="panel-section collapsible">
+        <h3 class="panel-title">🛰️ ASTEROID LIST</h3>
+        <div class="asteroid-list-controls">
+          <select id="asteroid-sort" class="asteroid-sort">
+            <option value="distance">Sort by Distance</option>
+            <option value="name">Sort by Name</option>
+            <option value="size">Sort by Size</option>
+            <option value="hazard">Hazardous First</option>
+          </select>
+        </div>
+        <div id="asteroid-list" class="asteroid-list">
+          <div class="info-placeholder">
+            <span class="placeholder-icon">📊</span>
+            <p>Load asteroids to see list</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="panel-title">VISUALIZATION</h3>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-orbits" checked>
+            <span class="checkbox-custom"></span>
+            Show Orbit Paths
+          </label>
+        </div>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-labels" checked>
+            <span class="checkbox-custom"></span>
+            Show Labels
+          </label>
+        </div>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-grid">
+            <span class="checkbox-custom"></span>
+            Ecliptic Grid
+          </label>
+        </div>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="post-processing" checked>
+            <span class="checkbox-custom"></span>
+            Post-Processing (Bloom/SSAO)
+          </label>
+        </div>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="show-hazardous-only">
+            <span class="checkbox-custom"></span>
+            ⚠️ Show Hazardous Only
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Panel - Info -->
+    <aside id="right-panel">
+      <div class="panel-section">
+        <h3 class="panel-title">SELECTED OBJECT</h3>
+        <div id="selected-info" class="info-display">
+          <div class="info-placeholder">
+            <span class="placeholder-icon">◌</span>
+            <p>Click on an object to view details</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="panel-title">DEFLECTION CONTROL</h3>
+        <div class="deflection-controls hidden" id="deflection-controls">
+          <div class="input-group">
+            <label class="input-label">Δv X (m/s)</label>
+            <input type="number" id="dv-x" class="number-input" value="0" step="0.1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Δv Y (m/s)</label>
+            <input type="number" id="dv-y" class="number-input" value="0" step="0.1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Δv Z (m/s)</label>
+            <input type="number" id="dv-z" class="number-input" value="0" step="0.1">
+          </div>
+          <div class="info-row" style="margin: 10px 0;">
+            <span class="info-label">|Δv| Magnitude</span>
+            <span class="info-value" id="dv-magnitude">0.00 m/s</span>
+          </div>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="show-trajectory">
+              <span class="checkbox-custom"></span>
+              Show Trajectory Preview
+            </label>
+          </div>
+          <button class="action-btn danger" id="btn-apply-impulse">
+            <span class="btn-icon">⚡</span> Kinetic Impactor
+          </button>
+
+          <!-- Ion Beam Deflection -->
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--color-border);">
+            <label class="slider-label">Ion Beam Thrust (μN)</label>
+            <input type="range" id="ion-thrust" class="slider" min="1" max="1000" step="10" value="100">
+            <div class="slider-value" id="ion-thrust-value">100 μN</div>
+            <label class="slider-label" style="margin-top: 8px;">Duration (days)</label>
+            <input type="range" id="ion-duration" class="slider" min="1" max="365" step="1" value="30">
+            <div class="slider-value" id="ion-duration-value">30 days</div>
+            <button class="action-btn secondary" id="btn-apply-ion" style="margin-top: 10px;">
+              <span class="btn-icon">💨</span> Apply Ion Beam
+            </button>
+          </div>
+        </div>
+        <div class="deflection-placeholder" id="deflection-placeholder">
+          <p>Select an asteroid to enable deflection controls</p>
+        </div>
+      </div>
+
+      <!-- Impact Prediction with Torino/Palermo Scale -->
+      <div class="panel-section">
+        <h3 class="panel-title">IMPACT ANALYSIS</h3>
+        <div id="impact-info" class="info-display">
+          <div class="info-placeholder">
+            <span class="placeholder-icon">🎯</span>
+            <p>Select an asteroid to view approach data</p>
+          </div>
+        </div>
+        <!-- Torino Scale Display -->
+        <div id="torino-display" class="torino-scale hidden">
+          <div class="torino-header">
+            <span class="torino-label">TORINO SCALE</span>
+            <span class="torino-value" id="torino-value">0</span>
+          </div>
+          <div class="torino-bar">
+            <div class="torino-segment white" data-level="0"></div>
+            <div class="torino-segment green" data-level="1"></div>
+            <div class="torino-segment yellow" data-level="2-4"></div>
+            <div class="torino-segment orange" data-level="5-7"></div>
+            <div class="torino-segment red" data-level="8-10"></div>
+          </div>
+          <div class="torino-description" id="torino-description">No hazard</div>
+        </div>
+        <!-- MOID Display -->
+        <div id="moid-display" class="moid-info hidden">
+          <div class="info-row">
+            <span class="info-label">MOID (AU)</span>
+            <span class="info-value" id="moid-value">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">MOID (LD)</span>
+            <span class="info-value" id="moid-ld-value">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Asteroid Info Panel -->
+      <div class="panel-section">
+        <h3 class="panel-title">ASTEROID INFO</h3>
+        <div id="asteroid-info" class="info-display">
+          <div class="info-placeholder">
+            <span class="placeholder-icon">📚</span>
+            <p>Select an asteroid for facts</p>
+          </div>
+        </div>
+        <div id="asteroid-details" class="asteroid-details hidden">
+          <div class="info-row">
+            <span class="info-label">Spectral Type</span>
+            <span class="info-value" id="spectral-type">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Est. Mass (kg)</span>
+            <span class="info-value" id="est-mass">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Est. Density</span>
+            <span class="info-value" id="est-density">-</span>
+          </div>
+          <a href="#" id="wiki-link" class="wiki-link hidden" target="_blank">
+            📖 View on Wikipedia
+          </a>
+        </div>
+      </div>
+
+      <!-- Historical Impacts -->
+      <div class="panel-section collapsible">
+        <h3 class="panel-title">🌍 HISTORICAL IMPACTS</h3>
+        <div class="historical-impacts">
+          <div class="impact-item" data-event="chelyabinsk">
+            <span class="impact-name">Chelyabinsk (2013)</span>
+            <span class="impact-size">~20m, 500kt</span>
+          </div>
+          <div class="impact-item" data-event="tunguska">
+            <span class="impact-name">Tunguska (1908)</span>
+            <span class="impact-size">~60m, 10-15Mt</span>
+          </div>
+          <div class="impact-item" data-event="chicxulub">
+            <span class="impact-name">Chicxulub (66Ma)</span>
+            <span class="impact-size">~10km, extinction</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="panel-title">ENERGY CONSERVATION</h3>
+        <canvas id="energy-chart" width="280" height="100"></canvas>
+      </div>
+
+      <!-- Screenshot/Export -->
+      <div class="panel-section">
+        <button class="action-btn" id="btn-screenshot">
+          <span class="btn-icon">📷</span> Capture Screenshot
+        </button>
+      </div>
+
+      <!-- Scenario Save/Load -->
+      <div class="panel-section">
+        <h3 class="panel-title">💾 SCENARIOS</h3>
+        <div class="scenario-controls">
+          <button class="action-btn secondary" id="btn-save-scenario">
+            <span class="btn-icon">💾</span> Save State
+          </button>
+          <select id="scenario-list" class="scenario-select">
+            <option value="">-- Saved Scenarios --</option>
+          </select>
+          <button class="action-btn" id="btn-load-scenario">
+            <span class="btn-icon">📂</span> Load State
+          </button>
+        </div>
+      </div>
+
+      <!-- Help & Education -->
+      <div class="panel-section">
+        <h3 class="panel-title">📚 LEARN</h3>
+        <div class="help-buttons">
+          <button class="action-btn secondary" id="btn-tutorial">
+            <span class="btn-icon">🎓</span> Tutorial
+          </button>
+          <button class="action-btn secondary" id="btn-glossary">
+            <span class="btn-icon">📖</span> Glossary
+          </button>
+        </div>
+        <div class="help-buttons" style="margin-top: 8px;">
+          <button class="action-btn secondary" id="btn-random-fact">
+            <span class="btn-icon">💡</span> Did You Know?
+          </button>
+        </div>
+      </div>
+
+      <!-- View Controls -->
+      <div class="panel-section">
+        <h3 class="panel-title">👁️ VIEW</h3>
+        <div class="help-buttons">
+          <button class="action-btn secondary" id="btn-zoom-fit">
+            <span class="btn-icon">⊞</span> Zoom to Fit
+          </button>
+          <button class="action-btn secondary" id="btn-toggle-theme">
+            <span class="btn-icon">🌓</span> Theme
+          </button>
+        </div>
+        <div class="help-buttons" style="margin-top: 8px;">
+          <button class="action-btn secondary" id="btn-multi-select">
+            <span class="btn-icon">☑️</span> Multi-Select
+          </button>
+          <button class="action-btn secondary" id="btn-realtime-sync">
+            <span class="btn-icon">🕐</span> Real-Time
+          </button>
+        </div>
+        <div class="help-buttons" style="margin-top: 8px;">
+          <button class="action-btn secondary" id="btn-pdf-export">
+            <span class="btn-icon">📄</span> Export Report
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Bottom Bar -->
+    <footer id="bottom-bar">
+      <div class="footer-left">
+        <span class="footer-label">CAMERA:</span>
+        <span class="footer-value" id="camera-info">Heliocentric | Zoom: 1.0 AU</span>
+      </div>
+      <div class="footer-center">
+        <span class="footer-label">INTEGRATOR:</span>
+        <span class="footer-value">Velocity Verlet (Symplectic)</span>
+      </div>
+      <div class="footer-right">
+        <span class="footer-label">FPS:</span>
+        <span class="footer-value" id="fps-counter">60</span>
+      </div>
+
+      <!-- Distance Scale Ruler -->
+      <div class="distance-scale" id="distance-scale">
+        <div class="scale-bar"></div>
+        <span class="scale-label" id="scale-label">1 AU</span>
+      </div>
+
+      <!-- Camera Preset Buttons -->
+      <div class="footer-camera-presets">
+        <button class="camera-preset-btn" id="cam-sun" title="Sun View">☀️</button>
+        <button class="camera-preset-btn" id="cam-earth" title="Earth View">🌍</button>
+        <button class="camera-preset-btn" id="cam-top" title="Top-Down View">⬆️</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="tooltip" class="hidden">
+    <div class="tooltip-content"></div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div id="shortcuts-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⌨️ Keyboard Shortcuts</h2>
+        <button class="modal-close" id="close-shortcuts">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcut-group">
+          <h4>Simulation</h4>
+          <div class="shortcut-row"><kbd>Space</kbd><span>Play / Pause</span></div>
+          <div class="shortcut-row"><kbd>R</kbd><span>Reset Simulation</span></div>
+          <div class="shortcut-row"><kbd>+</kbd><span>Speed Up</span></div>
+          <div class="shortcut-row"><kbd>-</kbd><span>Slow Down</span></div>
+        </div>
+        <div class="shortcut-group">
+          <h4>Camera</h4>
+          <div class="shortcut-row"><kbd>1</kbd><span>Sun View</span></div>
+          <div class="shortcut-row"><kbd>2</kbd><span>Earth View</span></div>
+          <div class="shortcut-row"><kbd>3</kbd><span>Top-Down View</span></div>
+          <div class="shortcut-row"><kbd>Scroll</kbd><span>Zoom In/Out</span></div>
+        </div>
+        <div class="shortcut-group">
+          <h4>Interface</h4>
+          <div class="shortcut-row"><kbd>?</kbd><span>Show Shortcuts</span></div>
+          <div class="shortcut-row"><kbd>O</kbd><span>Toggle Orbits</span></div>
+          <div class="shortcut-row"><kbd>G</kbd><span>Toggle Grid</span></div>
+          <div class="shortcut-row"><kbd>Esc</kbd><span>Close Modal</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding Tutorial Modal -->
+  <div id="tutorial-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content tutorial-content">
+      <div class="modal-header">
+        <h2>🚀 Welcome to Orbital Sentinel</h2>
+        <button class="modal-close" id="close-tutorial">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="tutorial-slides">
+          <div class="tutorial-slide active" data-step="1">
+            <div class="tutorial-icon">🌍</div>
+            <h3>Near-Earth Object Tracker</h3>
+            <p>Orbital Sentinel simulates asteroids that pass close to Earth. You can visualize their orbits, analyze
+              their potential impact risk, and simulate deflection missions.</p>
+          </div>
+          <div class="tutorial-slide" data-step="2">
+            <div class="tutorial-icon">🖱️</div>
+            <h3>Selecting Objects</h3>
+            <p>Click on any asteroid in the 3D view to select it. You'll see its orbit path, distance line to Earth, and
+              detailed information in the right panel.</p>
+          </div>
+          <div class="tutorial-slide" data-step="3">
+            <div class="tutorial-icon">⚡</div>
+            <h3>Deflection Control</h3>
+            <p>When an asteroid is selected, use the Deflection Controls to apply velocity changes (Δv) via kinetic
+              impactor or ion beam to alter its trajectory.</p>
+          </div>
+          <div class="tutorial-slide" data-step="4">
+            <div class="tutorial-icon">📊</div>
+            <h3>Risk Assessment</h3>
+            <p>The Torino Scale (0-10) and MOID (Minimum Orbit Intersection Distance) help assess the potential hazard
+              level of each asteroid.</p>
+          </div>
+          <div class="tutorial-slide" data-step="5">
+            <div class="tutorial-icon">💾</div>
+            <h3>What-If Scenarios</h3>
+            <p>Save your simulation state before applying deflections. Load saved states to compare different scenarios
+              and strategies.</p>
+          </div>
+        </div>
+        <div class="tutorial-nav">
+          <button class="tutorial-btn" id="tutorial-prev" disabled>← Previous</button>
+          <div class="tutorial-dots" id="tutorial-dots"></div>
+          <button class="tutorial-btn primary" id="tutorial-next">Next →</button>
+        </div>
+        <label class="checkbox-label tutorial-checkbox">
+          <input type="checkbox" id="dont-show-again">
+          <span class="checkbox-custom"></span>
+          Don't show this again
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Glossary Modal -->
+  <div id="glossary-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📖 Glossary</h2>
+        <button class="modal-close" id="close-glossary">&times;</button>
+      </div>
+      <div class="modal-body glossary-body">
+        <div class="glossary-item">
+          <h4>NEO (Near-Earth Object)</h4>
+          <p>Asteroids or comets with orbits that bring them within 1.3 AU of the Sun.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>PHA (Potentially Hazardous Asteroid)</h4>
+          <p>NEOs with MOID ≤ 0.05 AU and absolute magnitude H ≤ 22 (diameter ≥ 140m).</p>
+        </div>
+        <div class="glossary-item">
+          <h4>MOID (Minimum Orbit Intersection Distance)</h4>
+          <p>The closest distance between two orbits. Shows how close an asteroid could potentially get to Earth.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Torino Scale</h4>
+          <p>A 0-10 scale assessing asteroid impact hazard. 0 = no hazard, 10 = certain global catastrophe.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Palermo Scale</h4>
+          <p>Logarithmic scale comparing impact risk to background hazard level. Negative = below average, >0 = above
+            average.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Delta-v (Δv)</h4>
+          <p>Change in velocity. The "currency" of space maneuvers, measured in m/s.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Kinetic Impactor</h4>
+          <p>Deflection method where a spacecraft crashes into an asteroid at high speed to change its trajectory (e.g.,
+            DART mission).</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Gravity Tractor</h4>
+          <p>Slow deflection method using a spacecraft's gravity to gradually alter an asteroid's orbit over years.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Yarkovsky Effect</h4>
+          <p>Thermal radiation force on rotating asteroids that slowly changes their orbits over millennia.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>AU (Astronomical Unit)</h4>
+          <p>Average Earth-Sun distance: ~149.6 million km. Standard unit for solar system distances.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>LD (Lunar Distance)</h4>
+          <p>Earth-Moon distance: ~384,400 km. Used for close approaches.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Julian Date (JD)</h4>
+          <p>Continuous count of days since January 1, 4713 BC. Astronomers' standard time system.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison Table Modal -->
+  <div id="comparison-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>📊 ASTEROID COMPARISON</h2>
+        <button class="modal-close" id="close-comparison">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="comparison-table-body">
+          <p style="color: var(--color-text-secondary);">Select asteroids to compare using Multi-Select mode.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Sheet -->
+  <div id="bottom-sheet" class="bottom-sheet">
+    <div class="bottom-sheet-header">
+      <div class="bottom-sheet-handle"></div>
+      <button class="modal-close" id="close-bottom-sheet">&times;</button>
+    </div>
+    <div id="bottom-sheet-content" class="bottom-sheet-body">
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <div class="mobile-bottom-nav">
+    <button class="mobile-nav-btn" id="btn-sheet-left">
+      <span>📊</span>
+      <span>Controls</span>
+    </button>
+    <button class="mobile-nav-btn" id="btn-compare">
+      <span>⚖️</span>
+      <span>Compare</span>
+    </button>
+    <button class="mobile-nav-btn" id="btn-sheet-right">
+      <span>🎯</span>
+      <span>Analysis</span>
+    </button>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+</body>
+
+</html>

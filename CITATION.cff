@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+title: "Orbital Sentinel: High-Fidelity NEO Defense Simulator"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Gümüş"
+    given-names: "Mehmet"
+    website: "https://spacegumus.com.tr"
+repository-code: "https://github.com/SpaceEngineerSS/CosmoRisk"
+url: "https://spacegumus.com.tr"
+abstract: >-
+  A physics-accurate Near-Earth Object (NEO) tracking and deflection simulator
+  featuring N-Body gravity with Jupiter/Mars perturbations, Velocity Verlet integration,
+  NASA NeoWs API integration, kinetic impactor and ion beam deflection methods,
+  Monte Carlo impact probability analysis, and advanced perturbation effects
+  including Yarkovsky thermal recoil, J2 oblateness, and Solar Radiation Pressure.
+  Features include 3D visualization with Three.js, Torino Scale assessment,
+  MOID calculator, asteroid comparison table, mobile touch gestures, and
+  educational content including tutorials and glossary.
+keywords:
+  - near-earth-objects
+  - asteroid-deflection
+  - n-body-simulation
+  - planetary-defense
+  - orbital-mechanics
+  - physics-simulation
+  - tauri
+  - rust
+  - three.js
+  - monte-carlo
+  - torino-scale
+license: MIT
+version: 2.0.0
+date-released: "2025-12-18"
