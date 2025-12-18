@@ -28,34 +28,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Import Code Signing Certificate
-        run: |
-          $pfxBytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERTIFICATE }}")
-          $pfxPath = "$env:RUNNER_TEMP\certificate.pfx"
-          [IO.File]::WriteAllBytes($pfxPath, $pfxBytes)
-          Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String "${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}" -Force -AsPlainText)
-        shell: powershell
-
       - name: Build Frontend
         run: npm run build
 
       - name: Build Rust Backend
         run: cargo build --release --manifest-path src-tauri/Cargo.toml
-
-      - name: Sign Executable
-        run: |
-          $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
-          $thumbprint = "FBA0F34D3439787A5B1767018899E1B510A14E34"
-          $exePath = "src-tauri/target/release/cosmorisk.exe"
-          
-          if (Test-Path $exePath) {
-            & $signtool sign /sha1 $thumbprint /fd sha256 /tr http://timestamp.digicert.com /td sha256 $exePath
-            Write-Host "Signed: $exePath"
-          } else {
-            Write-Error "EXE not found!"
-            exit 1
-          }
-        shell: powershell
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -71,10 +48,7 @@ jobs:
             - Jupiter/Mars/Moon gravitational perturbations
             
             ### Download
-            Download `cosmorisk.exe` below and run directly.
-            
-            ### Code Signed
-            Digitally signed by Mehmet Gümüş.
+            Download `cosmorisk.exe` and run directly.
             
             ### Note
             If Windows SmartScreen appears, click "More info" → "Run anyway"
