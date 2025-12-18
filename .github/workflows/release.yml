@@ -36,31 +36,24 @@ jobs:
           Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String "${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}" -Force -AsPlainText)
         shell: powershell
 
-      - name: Build Tauri App
-        run: npm run tauri build
+      - name: Build Frontend
+        run: npm run build
 
-      - name: Sign Executables
+      - name: Build Rust Backend
+        run: cargo build --release --manifest-path src-tauri/Cargo.toml
+
+      - name: Sign Executable
         run: |
           $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
           $thumbprint = "FBA0F34D3439787A5B1767018899E1B510A14E34"
-          
-          # Sign main exe
           $exePath = "src-tauri/target/release/cosmorisk.exe"
+          
           if (Test-Path $exePath) {
             & $signtool sign /sha1 $thumbprint /fd sha256 /tr http://timestamp.digicert.com /td sha256 $exePath
             Write-Host "Signed: $exePath"
-          }
-          
-          # Sign MSI
-          Get-ChildItem -Path "src-tauri/target/release/bundle/msi" -Filter "*.msi" -ErrorAction SilentlyContinue | ForEach-Object {
-            & $signtool sign /sha1 $thumbprint /fd sha256 /tr http://timestamp.digicert.com /td sha256 $_.FullName
-            Write-Host "Signed: $($_.FullName)"
-          }
-          
-          # Sign NSIS installer
-          Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
-            & $signtool sign /sha1 $thumbprint /fd sha256 /tr http://timestamp.digicert.com /td sha256 $_.FullName
-            Write-Host "Signed: $($_.FullName)"
+          } else {
+            Write-Error "EXE not found!"
+            exit 1
           }
         shell: powershell
 
@@ -78,13 +71,13 @@ jobs:
             - Jupiter/Mars/Moon gravitational perturbations
             
             ### Download
-            - **CosmoRisk_x.x.x_x64-setup.exe** - NSIS Installer
-            - **CosmoRisk_x.x.x_x64_en-US.msi** - MSI Installer
+            Download `cosmorisk.exe` below and run directly.
             
             ### Code Signed
             Digitally signed by Mehmet Gümüş.
-          files: |
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/nsis/*.exe
+            
+            ### Note
+            If Windows SmartScreen appears, click "More info" → "Run anyway"
+          files: src-tauri/target/release/cosmorisk.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
