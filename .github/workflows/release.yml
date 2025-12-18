@@ -9,33 +9,73 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  build-windows:
     runs-on: windows-latest
-    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm run build
+      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: src-tauri/target/release/cosmorisk.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - run: npm run build
+      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
+      - name: Rename for clarity
+        run: mv src-tauri/target/release/cosmorisk src-tauri/target/release/cosmorisk-linux
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: src-tauri/target/release/cosmorisk-linux
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies
-        run: npm ci
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm run build
+      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
+      - name: Rename for clarity
+        run: mv src-tauri/target/release/cosmorisk src-tauri/target/release/cosmorisk-macos
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: src-tauri/target/release/cosmorisk-macos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Frontend
-        run: npm run build
-
-      - name: Build Rust Backend
-        run: cargo build --release --manifest-path src-tauri/Cargo.toml
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+  create-release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: softprops/action-gh-release@v1
         with:
           name: 'CosmoRisk ${{ github.ref_name }}'
           body: |
@@ -48,10 +88,14 @@ jobs:
             - Jupiter/Mars/Moon gravitational perturbations
             
             ### Download
-            Download `cosmorisk.exe` and run directly.
+            | Platform | File |
+            |----------|------|
+            | Windows | `cosmorisk.exe` |
+            | Linux | `cosmorisk-linux` |
+            | macOS | `cosmorisk-macos` |
             
             ### Note
-            If Windows SmartScreen appears, click "More info" → "Run anyway"
-          files: src-tauri/target/release/cosmorisk.exe
+            - **Windows**: If SmartScreen appears, click "More info" → "Run anyway"
+            - **Linux/macOS**: Run `chmod +x cosmorisk-*` to make executable
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
