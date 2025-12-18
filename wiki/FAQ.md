@@ -64,12 +64,23 @@ sudo apt-get install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev pat
 ## Scientific
 
 ### What is the Torino Scale?
-A 0-10 scale for categorizing asteroid impact threat:
-- 0: No hazard
-- 1: Normal discovery, low threat
-- 2-4: Meriting concern
-- 5-7: Threatening
-- 8-10: Certain collision
+A 0-10 scale for categorizing asteroid impact threat based on **probability** and **kinetic energy**:
+
+| Level | Color | Category |
+|-------|-------|----------|
+| 0 | ⬜ White | No hazard - too small or impossible collision |
+| 1 | 🟩 Green | Normal - routine discovery, very low threat |
+| 2-4 | 🟨 Yellow | Meriting attention - deserves monitoring |
+| 5-7 | 🟧 Orange | Threatening - contingency planning needed |
+| 8-10 | 🟥 Red | Certain collision - impact will occur |
+
+**Energy Thresholds:**
+- **< 1 kiloton**: Burns up in atmosphere
+- **1 kt - 1 MT**: Local damage (e.g., Chelyabinsk)
+- **1 - 100 MT**: Regional devastation (e.g., Tunguska)
+- **> 100 MT**: National/global effects
+
+📖 See [Torino Scale wiki page](https://github.com/SpaceEngineerSS/CosmoRisk/wiki/Torino-Scale) for full methodology.
 
 ### What deflection method is most realistic?
 Currently, the **Kinetic Impactor** (proven by NASA's DART mission in 2022) is the most technologically ready.

@@ -35,7 +35,7 @@
 - **Post-Processing** - Unreal Bloom, SSAO, FXAA for cinematic quality
 
 ### Analysis Tools
-- **Torino Scale** - 0-10 impact hazard classification
+- **Torino Scale** - 0-10 impact hazard classification based on kinetic energy (Joules → Megatons TNT) and probability
 - **MOID Calculator** - Proper orbital intersection distance using 72×72 point sampling
 - **3D Orbit Visualization** - Accurate Keplerian orbits with inclination, RAAN, and argument of perihelion
 - **Spectral Type Analysis** - C/S/M/X/V composition types
@@ -89,6 +89,23 @@ J₂_Earth  = 1.08263×10⁻³                   Earth oblateness coefficient
 R_Earth   = 6.378137×10⁶ m                Earth equatorial radius
 P_SRP     = 4.56×10⁻⁶ N/m²                Solar radiation pressure (1 AU)
 ```
+
+### Torino Scale Methodology
+
+Kinetic energy is converted to Megatons TNT for threat classification:
+
+$$E_{MT} = \frac{E_{Joules}}{4.184 \times 10^{15}}$$
+
+| Energy Range | Classification | Example |
+|--------------|----------------|---------|
+| < 1 kiloton | Harmless | Burns up |
+| 1 kt - 1 MT | Local | Chelyabinsk (~500 kt) |
+| 1 - 100 MT | Regional | Tunguska (~15 MT) |
+| 100 MT - 1 GT | National | Large city destruction |
+| 1 - 100 GT | Global | Nuclear winter |
+| > 100 GT | Extinction | Chicxulub |
+
+Reference: [NASA CNEOS Torino Scale](https://cneos.jpl.nasa.gov/sentry/torino_scale.html)
 
 ---
 

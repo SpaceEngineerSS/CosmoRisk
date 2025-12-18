@@ -80,7 +80,11 @@ J2_EARTH = 1.08263e-3 // Earth oblateness coefficient
 
 ### Sağ Panel - Bilgi & Analiz
 - **Selected Object**: Seçili cismin pozisyon, hız, yarıçap bilgileri
-- **Torino Scale**: 0-10 tehlike seviyesi görselleştirmesi
+- **Torino Scale**: 0-10 tehlike seviyesi (enerji tabanlı: Joules → Megaton TNT)
+  - < 1 kt: Zararsız (atmosferde yanar)
+  - 1 kt - 1 MT: Yerel hasar
+  - 1 - 100 MT: Bölgesel
+  - > 100 MT: Ulusal/Küresel
 - **MOID Calculator**: Orbital kesişim mesafesi (72×72 nokta örnekleme)
 - **Asteroid Info**: Spektral tip, kütle, yoğunluk
 - **Deflection Control**: 

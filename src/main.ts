@@ -1775,58 +1775,100 @@ class OrbitalSentinelApp {
 
   private updateTorinoScale(
     probability: number,
-    energy: number,
+    energyJoules: number,
     distanceAU: number,
-    radiusKm: number
+    radiusMeters: number
   ): void {
-    // Enhanced Torino scale calculation
-    // Based on impact probability, kinetic energy, proximity, and size
+    // Scientifically accurate Torino Scale calculation
+    // Based on: https://cneos.jpl.nasa.gov/sentry/torino_scale.html
+
+    // Convert kinetic energy from Joules to Megatons TNT
+    // 1 Megaton = 4.184e15 Joules
+    const energyMT = energyJoules / 4.184e15;
+
+    // Energy-based threat thresholds (in Megatons TNT)
+    const isHarmless = energyMT < 0.001;        // < 1 kiloton - burns up
+    const isLocal = energyMT >= 0.001 && energyMT < 1;    // 1kt-1MT - local damage
+    const isRegional = energyMT >= 1 && energyMT < 100;   // 1-100 MT - regional
+    const isNational = energyMT >= 100 && energyMT < 1000; // 100-1000 MT - national
+    const isGlobal = energyMT >= 1000 && energyMT < 100000; // 1-100 Gigatons
+    const isExtinction = energyMT >= 100000;              // > 100 Gigatons
+
+    // MOID-based hazard assessment
+    const isPHA = distanceAU < 0.05; // Potentially Hazardous Asteroid threshold
+
     let level = 0;
 
-    // Distance-based assessment (closer = higher level)
-    const isClose = distanceAU < 0.05; // < 0.05 AU is concerning
-    const isVeryClose = distanceAU < 0.01; // < 0.01 AU is very concerning
+    // Torino Scale Logic (simplified from official scale)
+    // Level 0: No hazard - collision extremely unlikely
+    // Level 1: Normal - routine discovery, very unlikely collision
+    // Levels 2-4: Meriting attention by astronomers
+    // Levels 5-7: Threatening - governmental attention warranted
+    // Levels 8-10: Certain/near-certain collision
 
-    // Size-based assessment
-    const isLarge = radiusKm > 0.05; // > 50m can cause local damage
-    const isVeryLarge = radiusKm > 0.5; // > 500m can cause regional damage
-    const isMassive = radiusKm > 1.0; // > 1km can cause global effects
-
-    // Base level from probability
-    if (probability < 1e-6 && !isVeryClose) {
-      level = 0; // No hazard
-    } else if (probability < 1e-4 && !isClose) {
-      level = 1; // Normal
-    } else if (isVeryClose && isMassive) {
-      // Very close + massive = high threat
-      level = Math.min(10, 7 + Math.floor(probability * 6));
-    } else if (isVeryClose && isVeryLarge) {
-      level = Math.min(8, 5 + Math.floor(probability * 6));
-    } else if (isClose && isLarge) {
-      level = Math.min(6, 3 + Math.floor(Math.log10(energy + 1) / 4));
+    if (probability < 1e-7 || isHarmless) {
+      // No real hazard - energy too low or probability negligible
+      level = 0;
+    } else if (probability < 1e-6) {
+      // Very low probability
+      level = isPHA ? 1 : 0;
+    } else if (probability < 1e-4) {
+      // Low probability, merit attention
+      if (isExtinction) level = 4;
+      else if (isGlobal) level = 3;
+      else if (isNational) level = 2;
+      else level = 1;
     } else if (probability < 1e-2) {
-      level = Math.min(4, Math.floor(2 + Math.log10(energy + 1) / 5));
+      // Moderate probability
+      if (isExtinction) level = 6;
+      else if (isGlobal) level = 5;
+      else if (isNational) level = 4;
+      else if (isRegional) level = 3;
+      else level = 2;
     } else if (probability < 0.5) {
-      level = Math.min(7, Math.floor(4 + Math.log10(energy + 1) / 5));
+      // Significant probability
+      if (isExtinction) level = 8;
+      else if (isGlobal) level = 7;
+      else if (isNational) level = 6;
+      else if (isRegional) level = 5;
+      else level = 4;
+    } else if (probability < 0.99) {
+      // High probability
+      if (isExtinction) level = 9;
+      else if (isGlobal) level = 8;
+      else if (isNational) level = 7;
+      else if (isRegional) level = 6;
+      else level = 5;
     } else {
-      level = Math.min(10, Math.floor(7 + probability * 6));
+      // Certain collision (>99%)
+      if (isExtinction) level = 10;
+      else if (isGlobal) level = 10;
+      else if (isNational) level = 9;
+      else if (isRegional) level = 8;
+      else if (isLocal) level = 8;
+      else level = 0; // Too small to matter even with certain collision
     }
 
-    // Ensure level is valid
+    // Ensure level is valid 0-10
     level = Math.max(0, Math.min(10, Math.floor(level)));
 
+    // Format energy and size for display
+    const energyStr = energyMT >= 1000 ? `${(energyMT / 1000).toFixed(0)} GT` : `${energyMT.toFixed(2)} MT`;
+    const diameterM = radiusMeters * 2;
+    const sizeStr = diameterM >= 1000 ? `${(diameterM / 1000).toFixed(1)} km` : `${diameterM.toFixed(0)} m`;
+
     const torinoDescriptions: Record<number, string> = {
-      0: 'No hazard - Likelihood of collision is zero',
-      1: 'Normal - A routine discovery with no unusual concern',
-      2: 'Meriting attention - A somewhat close but not unusual encounter',
-      3: 'Meriting attention - Close encounter deserving attention',
-      4: 'Meriting attention - Close encounter with 1%+ chance of collision',
-      5: 'Threatening - Close encounter posing a serious threat',
-      6: 'Threatening - Close encounter with large object, significant threat',
-      7: 'Threatening - Extremely close encounter with large object',
-      8: 'Certain collision - Localized destruction expected',
-      9: 'Certain collision - Regional devastation expected',
-      10: 'Certain collision - Global climatic catastrophe'
+      0: `No hazard - ${isHarmless ? 'Energy too low (<1 kt)' : 'Collision impossible'}`,
+      1: `Normal - ${sizeStr} object (${energyStr})`,
+      2: `Meriting attention - ${sizeStr} close pass (${energyStr})`,
+      3: `Meriting attention - ${sizeStr} regional threat (${energyStr})`,
+      4: `Meriting attention - ${sizeStr} 1%+ collision (${energyStr})`,
+      5: `Threatening - ${sizeStr} regional destruction (${energyStr})`,
+      6: `Threatening - ${sizeStr} national threat (${energyStr})`,
+      7: `Threatening - ${sizeStr} global effects (${energyStr})`,
+      8: `Certain impact - ${sizeStr} local destruction (${energyStr})`,
+      9: `Certain impact - ${sizeStr} continental (${energyStr})`,
+      10: `Certain impact - ${sizeStr} global catastrophe (${energyStr})`
     };
 
     const torinoDisplay = document.getElementById('torino-display');
@@ -1838,7 +1880,7 @@ class OrbitalSentinelApp {
       torinoValue.textContent = String(level);
       torinoDescription.textContent = torinoDescriptions[level] || 'Unknown';
 
-      // Highlight active segment
+      // Highlight active segment based on Torino color coding
       document.querySelectorAll('.torino-segment').forEach(seg => seg.classList.remove('active'));
       if (level === 0) {
         document.querySelector('.torino-segment.white')?.classList.add('active');

@@ -83,13 +83,35 @@ E - e·sin(E) = M
 
 Solved using Newton-Raphson iteration.
 
+## Torino Scale
+
+CosmoRisk implements energy-based Torino Scale assessment:
+
+| Level | Color | Meaning |
+|-------|-------|---------|
+| 0 | White | No hazard |
+| 1 | Green | Normal discovery |
+| 2-4 | Yellow | Meriting attention |
+| 5-7 | Orange | Threatening |
+| 8-10 | Red | Certain collision |
+
+Energy thresholds (Megatons TNT):
+- **< 1 kt**: Burns up (Level 0)
+- **1 kt - 1 MT**: Local damage
+- **1 - 100 MT**: Regional damage
+- **100 - 1000 MT**: National scale
+- **> 1000 MT**: Global effects
+
+📖 See [Torino Scale](Torino-Scale) for complete methodology.
+
 ## References
 
 1. NASA JPL Solar System Dynamics
 2. Velocity Verlet: Swope et al. (1982)
 3. Orbital Mechanics: Vallado (2007)
 4. Asteroid Densities: Carry (2012)
+5. Torino Scale: Morrison et al. (2004)
 
 ---
 
-[← Keyboard Shortcuts](Keyboard-Shortcuts) | [Next: Deflection Methods →](Deflection-Methods)
+[← Keyboard Shortcuts](Keyboard-Shortcuts) | [Next: Torino Scale →](Torino-Scale)

@@ -26,7 +26,12 @@ based on simplified physical models and may not accurately represent real-world 
 
 3. **MOID Calculation**: Uses 72×72 point orbital sampling for accuracy, but is not JPL-grade precision.
 
-4. **Impact Predictions**: All "hazard" or "impact" assessments are **NOT** official NASA/ESA 
+4. **Torino Scale**: Our energy-based Torino classification is a simplified model that:
+   - Converts kinetic energy to Megatons TNT
+   - Uses probability × energy thresholds
+   - Does NOT replace official NASA Sentry or ESA NEOCC assessments
+
+5. **Impact Predictions**: All "hazard" or "impact" assessments are **NOT** official NASA/ESA 
    determinations. For official assessments, consult:
    - [NASA Center for Near Earth Object Studies (CNEOS)](https://cneos.jpl.nasa.gov/)
    - [ESA NEO Coordination Centre (NEOCC)](https://neo.ssa.esa.int/)

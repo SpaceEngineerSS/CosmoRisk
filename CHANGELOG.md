@@ -5,7 +5,7 @@ All notable changes to CosmoRisk will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 18.12.2025
+## [2.0.1] - 18.12.2025
 
 ### Added - Branding & Polish
 - CosmoRisk branding throughout application
@@ -25,7 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Collision warning banner with pulse animation
 
 ### Added - Analysis Tools
-- Torino Scale (0-10) impact hazard assessment
+- Torino Scale (0-10) impact hazard assessment with energy-based classification:
+  - Kinetic energy conversion: Joules → Megatons TNT
+  - Energy thresholds: harmless (<1 kt), local (1 kt-1 MT), regional (1-100 MT), national (100-1000 MT), global (1-100 GT), extinction (>100 GT)
+  - Probability × Energy matrix for accurate threat levels
+  - NASA CNEOS reference integration
+  - Display shows asteroid diameter and energy in MT/GT format
 - MOID Calculator with real distance-based calculations
 - Spectral type analysis (C/S/M/X/V)
 - Side-by-side asteroid comparison table modal

@@ -10,6 +10,7 @@ Welcome to the **CosmoRisk** documentation! This wiki provides comprehensive gui
 | [Getting Started](Getting-Started) | First steps and basic usage |
 | [Keyboard Shortcuts](Keyboard-Shortcuts) | All hotkeys and controls |
 | [Physics Engine](Physics-Engine) | Scientific methodology explained |
+| [Torino Scale](Torino-Scale) | Impact hazard classification (0-10) |
 | [Deflection Methods](Deflection-Methods) | Kinetic Impactor, Ion Beam, Gravity Tractor |
 | [NASA API](NASA-API) | NeoWs API integration guide |
 | [FAQ](FAQ) | Frequently asked questions |
