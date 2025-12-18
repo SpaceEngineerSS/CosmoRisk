@@ -31,18 +31,43 @@ jobs:
       - name: Import Code Signing Certificate
         run: |
           $pfxBytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERTIFICATE }}")
-          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\certificate.pfx", $pfxBytes)
-          Import-PfxCertificate -FilePath "$env:RUNNER_TEMP\certificate.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String "${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}" -Force -AsPlainText)
+          $pfxPath = "$env:RUNNER_TEMP\certificate.pfx"
+          [IO.File]::WriteAllBytes($pfxPath, $pfxBytes)
+          Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String "${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}" -Force -AsPlainText)
         shell: powershell
 
-      - name: Build Tauri App (with signing)
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Tauri App (unsigned)
+        run: npm run tauri build -- --config src-tauri/tauri.conf.release.json
+
+      - name: Sign Executables
+        run: |
+          # Find and sign all exe files
+          $exePath = "src-tauri/target/release/cosmorisk.exe"
+          if (Test-Path $exePath) {
+            & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe" sign /sha1 FBA0F34D3439787A5B1767018899E1B510A14E34 /fd sha256 /tr http://timestamp.digicert.com /td sha256 $exePath
+            Write-Host "Signed: $exePath"
+          }
+          
+          # Sign MSI if exists
+          $msiFiles = Get-ChildItem -Path "src-tauri/target/release/bundle/msi" -Filter "*.msi" -ErrorAction SilentlyContinue
+          foreach ($msi in $msiFiles) {
+            & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe" sign /sha1 FBA0F34D3439787A5B1767018899E1B510A14E34 /fd sha256 /tr http://timestamp.digicert.com /td sha256 $msi.FullName
+            Write-Host "Signed: $($msi.FullName)"
+          }
+          
+          # Sign NSIS installer if exists  
+          $nsisFiles = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*.exe" -ErrorAction SilentlyContinue
+          foreach ($nsis in $nsisFiles) {
+            & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe" sign /sha1 FBA0F34D3439787A5B1767018899E1B510A14E34 /fd sha256 /tr http://timestamp.digicert.com /td sha256 $nsis.FullName
+            Write-Host "Signed: $($nsis.FullName)"
+          }
+        shell: powershell
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'CosmoRisk ${{ github.ref_name }}'
-          releaseBody: |
+          name: 'CosmoRisk ${{ github.ref_name }}'
+          body: |
             ## CosmoRisk ${{ github.ref_name }}
             
             ### 🚀 What's New
@@ -60,5 +85,8 @@ jobs:
             
             ---
             *Developed by [Mehmet Gümüş](https://spacegumus.com.tr)*
-          releaseDraft: false
-          prerelease: false
+          files: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
