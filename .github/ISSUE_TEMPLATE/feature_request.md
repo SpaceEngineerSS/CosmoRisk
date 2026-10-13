@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for Orbital Sentinel
+about: Suggest an idea for CosmoRisk
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
