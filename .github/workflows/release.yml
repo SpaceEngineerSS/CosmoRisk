@@ -51,7 +51,11 @@ jobs:
         run: |
           ver="${GITHUB_REF_NAME#v}"
           awk -v v="$ver" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > notes.md
-          echo "file=notes.md" >> "$GITHUB_OUTPUT"
+          {
+            echo "body<<NOTES_EOF"
+            cat notes.md
+            echo "NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -59,7 +63,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: CosmoRisk ${{ github.ref_name }}
-          releaseBodyPath: notes.md
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

@@ -39,8 +39,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "publisher": "Mehmet Gümüş",
-    "copyright": "© 2024–2026 Mehmet Gümüş. MIT License.",
+    "publisher": "Mehmet Gumus",
+    "copyright": "Copyright (c) 2024-2026 Mehmet Gumus. MIT License.",
     "category": "Education",
     "shortDescription": "Near-Earth asteroid simulator",
     "longDescription": "CosmoRisk loads real near-Earth asteroid orbits from NASA/JPL, propagates them with planetary perturbations, finds close approaches to Earth, estimates impact probability with Monte Carlo sampling of the orbit covariance, and simulates deflection missions.",
