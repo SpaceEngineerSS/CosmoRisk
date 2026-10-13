@@ -3,7 +3,7 @@
 //! keeping terms with amplitude >= 1e-8 (about 1.5 km in R, 2 mas in L, B).
 //! Each term is (A, B, C): A * cos(B + C * t), t in Julian millennia from J2000.
 
-#![allow(clippy::excessive_precision, clippy::unreadable_literal)]
+#![allow(clippy::excessive_precision, clippy::unreadable_literal, clippy::approx_constant)]
 
 const L0: [(f64, f64, f64); 221] = [
     (1.75347045673, 0.0, 0.0),
