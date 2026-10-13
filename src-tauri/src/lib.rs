@@ -1,49 +1,70 @@
-// CosmoRisk - NEO Tracking & Deflection Simulator
-// Main entry point for Tauri application
+//! CosmoRisk: near-Earth object simulator.
 
-mod api_client;
-mod physics_engine;
-mod state_manager;
+// Index loops read better than iterator chains in the numeric code.
+#![allow(clippy::needless_range_loop, clippy::too_many_arguments, clippy::type_complexity)]
 
-use state_manager::{
-    apply_deflection, apply_gravity_tractor, apply_ion_beam, fetch_asteroid_by_id, fetch_asteroids,
-    fetch_asteroids_by_date, fetch_more_asteroids, get_body_details, get_cached_asteroids,
-    get_impact_prediction, get_simulation_state, reset_simulation, run_monte_carlo, set_api_key,
-    set_paused, set_time_scale, set_time_step, start_simulation_loop, AppState,
-};
+mod commands;
+mod data;
+mod physics;
+mod sim;
+
+use commands::AppState;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app_state = AppState::new();
-
-    // Start background simulation loop
-    let sim_state = app_state.simulation.clone();
-    let is_running = app_state.is_running.clone();
-    *is_running.write() = true;
-    start_simulation_loop(sim_state, is_running);
+    let state = AppState::new();
+    sim::spawn_loop(state.sim.clone());
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(app_state)
+        .plugin(tauri_plugin_dialog::init())
+        .manage(state)
+        .setup(|app| {
+            if let Ok(dir) = app.path().app_data_dir() {
+                let state = app.state::<AppState>();
+                *state.store.lock() = Some(data::cache::Store::new(dir));
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
-            get_simulation_state,
-            set_paused,
-            set_time_scale,
-            set_time_step,
-            reset_simulation,
-            apply_deflection,
-            set_api_key,
-            fetch_asteroids,
-            fetch_more_asteroids,
-            get_body_details,
-            get_cached_asteroids,
-            apply_ion_beam,
-            get_impact_prediction,
-            run_monte_carlo,
-            apply_gravity_tractor,
-            fetch_asteroids_by_date,
-            fetch_asteroid_by_id,
+            commands::get_frame,
+            commands::get_bodies,
+            commands::get_planets,
+            commands::get_body_detail,
+            commands::get_orbit_path,
+            commands::moon_orbit,
+            commands::set_paused,
+            commands::set_rate,
+            commands::set_date,
+            commands::sync_now,
+            commands::reset_simulation,
+            commands::remove_bodies,
+            commands::take_events,
+            commands::load_catalog,
+            commands::load_object,
+            commands::cached_catalog_info,
+            commands::restore_cached_catalog,
+            commands::upcoming_close_approaches,
+            commands::object_close_approaches,
+            commands::sentry_list,
+            commands::sentry_detail,
+            commands::scan_approaches,
+            commands::plan_deflection,
+            commands::apply_deflection,
+            commands::run_monte_carlo,
+            commands::cancel_monte_carlo,
+            commands::assess,
+            commands::save_scenario,
+            commands::list_scenarios,
+            commands::load_scenario,
+            commands::delete_scenario,
+            commands::export_scenario,
+            commands::import_scenario,
+            commands::write_text_file,
+            commands::read_text_file,
+            commands::write_binary_file,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("error while running CosmoRisk");
 }
