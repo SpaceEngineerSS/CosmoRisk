@@ -233,7 +233,7 @@ pub fn monte_carlo(
                     (r1 + dr, v1 + dv)
                 })
                 .collect();
-            ("JPL orbit covariance".to_string(), starts)
+            ("covariance".to_string(), starts)
         }
         Uncertainty::Isotropic { pos_km, vel_ms } => {
             let mut rng = SmallRng::seed_from_u64(seed);
@@ -248,7 +248,7 @@ pub fn monte_carlo(
                     )
                 })
                 .collect();
-            ("Isotropic scatter".to_string(), starts)
+            ("isotropic".to_string(), starts)
         }
     };
 

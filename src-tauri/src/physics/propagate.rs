@@ -399,7 +399,7 @@ mod tests {
         let c = scan.closest.expect("closest approach");
         // JPL CAD: 2029-Apr-13 21:46 TDB (JD 2462240.4071), 38,011 km, 7.42 km/s.
         // This engine gets ~37,900 km within a minute of the JPL time.
-        assert!((c.jd - 2_462_240.4071).abs() < 0.01, "date {}", c.jd);
+        assert!((c.jd - 2_462_240.407_1).abs() < 0.01, "date {}", c.jd);
         assert!((c.dist_km - 38_011.0).abs() < 1_500.0, "distance {} km", c.dist_km);
         assert!((c.v_rel_kms - 7.42).abs() < 0.1, "v_rel {}", c.v_rel_kms);
         assert!(!scan.impacted);

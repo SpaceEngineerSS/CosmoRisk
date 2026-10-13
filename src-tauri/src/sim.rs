@@ -118,23 +118,6 @@ impl Sim {
         added
     }
 
-    /// Move the clock to `jd` and re-place every body from its catalogue
-    /// orbit. Deflections are lost, because the old trajectory no longer
-    /// applies.
-    pub fn jump_to(&mut self, jd: f64) {
-        self.jd = jd;
-        let records: Vec<ObjectRecord> = self.bodies.iter().map(|b| b.rec.clone()).collect();
-        let placed = place_records(&records, jd);
-        for (b, (r, v)) in self.bodies.iter_mut().zip(placed) {
-            b.r = r;
-            b.v = v;
-            b.thrust = None;
-            b.impacted = None;
-            b.delta_v_ms = 0.0;
-        }
-        self.version = self.version.wrapping_add(1);
-    }
-
     pub fn push_event(&mut self, e: SimEvent) {
         self.events.push(e);
         if self.events.len() > 64 {
@@ -213,6 +196,84 @@ pub fn place_records(records: &[ObjectRecord], jd: f64) -> Vec<(Vec3, Vec3)> {
         .collect()
 }
 
+/// One body's state as handed to the integrator.
+pub type BodyState = (Vec3, Vec3, Option<Thrust>, bool);
+/// Result: new state and, if the body hit Earth, (jd, impact speed km/s).
+pub type StepResult = (Vec3, Vec3, Option<(f64, f64)>);
+
+/// Advance many bodies from `jd0` to `jd1` in parallel, stopping each one
+/// at Earth impact.
+pub fn propagate_batch(states: &[BodyState], jd0: f64, jd1: f64) -> Vec<StepResult> {
+    let table = EphemerisTable::build(jd0, jd1);
+    let prop = Propagator::new(&table);
+    states
+        .par_iter()
+        .map(|&(r, v, thrust, impacted)| {
+            if impacted {
+                return (r, v, None);
+            }
+            let mut hit: Option<(f64, f64)> = None;
+            let (r1, v1, _) = prop.advance(r, v, jd0, jd1, thrust.as_ref(), |st| {
+                let (d, t) = st.earth_min();
+                if d < EARTH_RADIUS_AU {
+                    let ve = prop.earth_velocity(t);
+                    hit = Some((t, (st.v1 - ve).norm() * AU_PER_DAY_KMS));
+                    return false;
+                }
+                true
+            });
+            if let Some((t, _)) = hit {
+                // Pin the body to Earth's surface at the impact point.
+                let e = table.at(t)[IDX_EARTH];
+                let dir = (r1 - e).unit();
+                return (e + dir * EARTH_RADIUS_AU, v1, hit);
+            }
+            (r1, v1, None)
+        })
+        .collect()
+}
+
+impl Sim {
+    pub fn snapshot(&self) -> Vec<BodyState> {
+        self.bodies.iter().map(|b| (b.r, b.v, b.thrust, b.impacted.is_some())).collect()
+    }
+
+    /// Write integrated states back. Returns false if the simulation changed
+    /// underneath (bodies added/removed, clock moved) and nothing was applied.
+    pub fn apply_batch(&mut self, version: u32, jd0: f64, jd1: f64, results: Vec<StepResult>) -> bool {
+        if self.version != version || self.jd != jd0 || self.bodies.len() != results.len() {
+            return false;
+        }
+        let forward = jd1 >= jd0;
+        let mut events = Vec::new();
+        for (b, (r, v, hit)) in self.bodies.iter_mut().zip(results) {
+            if b.impacted.is_some() {
+                continue;
+            }
+            b.r = r;
+            b.v = v;
+            if let Some(th) = &b.thrust {
+                let past = if forward { jd1 > th.end.max(th.start) } else { jd1 < th.start.min(th.end) };
+                if past {
+                    b.thrust = None;
+                }
+            }
+            if let Some((t, vk)) = hit {
+                b.impacted = Some(t);
+                events.push(SimEvent::Impact { id: b.rec.id.clone(), name: b.rec.name.clone(), jd: t, v_kms: vk });
+            }
+        }
+        self.jd = jd1;
+        if !events.is_empty() {
+            self.version = self.version.wrapping_add(1);
+            for e in events {
+                self.push_event(e);
+            }
+        }
+        true
+    }
+}
+
 /// Background thread that advances the simulation in real time.
 pub fn spawn_loop(sim: Arc<RwLock<Sim>>) {
     std::thread::Builder::new()
@@ -225,75 +286,21 @@ pub fn spawn_loop(sim: Arc<RwLock<Sim>>) {
                 let real_dt = start.duration_since(last).as_secs_f64().min(0.1);
                 last = start;
 
-                // Snapshot under a short read lock.
+                // Snapshot under a short read lock, integrate without any lock.
                 let snapshot = {
                     let s = sim.read();
                     if s.paused || s.rate == 0.0 {
                         None
                     } else {
-                        let states: Vec<(Vec3, Vec3, Option<Thrust>, bool)> =
-                            s.bodies.iter().map(|b| (b.r, b.v, b.thrust, b.impacted.is_some())).collect();
-                        Some((s.jd, s.rate * real_dt, s.version, states))
+                        Some((s.jd, s.rate * real_dt, s.version, s.snapshot()))
                     }
                 };
 
                 if let Some((jd0, adv, version, states)) = snapshot {
                     let jd1 = jd0 + adv;
-                    let table = EphemerisTable::build(jd0, jd1);
-                    let prop = Propagator::new(&table);
-                    let results: Vec<(Vec3, Vec3, Option<(f64, f64)>)> = states
-                        .par_iter()
-                        .map(|&(r, v, thrust, impacted)| {
-                            if impacted {
-                                return (r, v, None);
-                            }
-                            let mut hit: Option<(f64, f64)> = None;
-                            let (r1, v1, _) = prop.advance(r, v, jd0, jd1, thrust.as_ref(), |st| {
-                                let (d, t) = st.earth_min();
-                                if d < EARTH_RADIUS_AU {
-                                    let ve = prop.earth_velocity(t);
-                                    hit = Some((t, (st.v1 - ve).norm() * AU_PER_DAY_KMS));
-                                    return false;
-                                }
-                                true
-                            });
-                            if let Some((t, _)) = hit {
-                                // Pin the body to Earth's surface position at impact.
-                                let e = table.at(t)[IDX_EARTH];
-                                let dir = (r1 - e).unit();
-                                return (e + dir * EARTH_RADIUS_AU, v1, hit);
-                            }
-                            (r1, v1, None)
-                        })
-                        .collect();
-
+                    let results = propagate_batch(&states, jd0, jd1);
                     let mut s = sim.write();
-                    if s.version == version && s.jd == jd0 && s.bodies.len() == results.len() {
-                        let mut events = Vec::new();
-                        for (b, (r, v, hit)) in s.bodies.iter_mut().zip(results) {
-                            if b.impacted.is_some() {
-                                continue;
-                            }
-                            b.r = r;
-                            b.v = v;
-                            if let Some(th) = &b.thrust {
-                                let past = if adv >= 0.0 { jd1 > th.end.max(th.start) } else { jd1 < th.start.min(th.end) };
-                                if past {
-                                    b.thrust = None;
-                                }
-                            }
-                            if let Some((t, vk)) = hit {
-                                b.impacted = Some(t);
-                                events.push(SimEvent::Impact { id: b.rec.id.clone(), name: b.rec.name.clone(), jd: t, v_kms: vk });
-                            }
-                        }
-                        s.jd = jd1;
-                        if !events.is_empty() {
-                            s.version = s.version.wrapping_add(1);
-                            for e in events {
-                                s.push_event(e);
-                            }
-                        }
+                    if s.apply_batch(version, jd0, jd1, results) {
                         s.step_ms = start.elapsed().as_secs_f32() * 1000.0;
                     }
                 }

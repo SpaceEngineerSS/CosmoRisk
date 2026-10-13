@@ -1,0 +1,93 @@
+/* CosmoRisk design tokens.
+   One accent (signal amber), warm graphite neutrals, hairline structure.
+   Status colours carry meaning only: never decoration. */
+
+:root {
+  --bg-0: #0b0c0e;
+  --bg-1: #111214;
+  --bg-2: #17181b;
+  --bg-3: #1e2023;
+  --bg-4: #26282c;
+  --line: #2a2c30;
+  --line-2: #393c41;
+  --fg-0: #ece8df;
+  --fg-1: #c2bdb2;
+  --fg-2: #908c83;
+  --fg-3: #6c6962;
+
+  --accent: #ffb000;
+  --accent-2: #ffc94d;
+  --accent-ink: #1b1300;
+  --accent-wash: rgba(255, 176, 0, 0.1);
+
+  --ok: #6fbf8a;
+  --warn: #ffb000;
+  --bad: #ff5a4e;
+  --bad-wash: rgba(255, 90, 78, 0.12);
+  --ok-wash: rgba(111, 191, 138, 0.12);
+
+  /* Torino scale colours (IAU convention: white, green, yellow, orange, red) */
+  --t0: #e8e4dc;
+  --t1: #5fb87a;
+  --t2: #f2d24b;
+  --t5: #ff9a3c;
+  --t8: #ff4d42;
+
+  --font-ui: 'IBM Plex Sans Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --fs-2xs: 10px;
+  --fs-xs: 11px;
+  --fs-s: 12px;
+  --fs-m: 13px;
+  --fs-l: 15px;
+  --fs-xl: 19px;
+
+  --r: 2px;
+  --gap: 12px;
+  --row: 30px;
+  --control: 28px;
+
+  --rail-l: 300px;
+  --rail-r: 360px;
+  --top: 44px;
+  --bottom: 56px;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --t-fast: 120ms;
+  --t-med: 200ms;
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg-0: #e4e0d7;
+  --bg-1: #f2efe8;
+  --bg-2: #faf8f3;
+  --bg-3: #e9e5dc;
+  --bg-4: #dcd7cc;
+  --line: #d2cdc2;
+  --line-2: #b9b3a6;
+  --fg-0: #1a1916;
+  --fg-1: #3d3a34;
+  --fg-2: #5f5b53;
+  --fg-3: #7d786e;
+
+  --accent: #a96200;
+  --accent-2: #c87800;
+  --accent-ink: #fff8ea;
+  --accent-wash: rgba(169, 98, 0, 0.1);
+
+  --ok: #2e7d4f;
+  --bad: #c0322a;
+  --bad-wash: rgba(192, 50, 42, 0.1);
+  --ok-wash: rgba(46, 125, 79, 0.1);
+
+  --t0: #6c6962;
+  --t1: #2e8b57;
+  --t2: #b8960e;
+  --t5: #d06a12;
+  --t8: #c0322a;
+
+  color-scheme: light;
+}

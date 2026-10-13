@@ -197,19 +197,52 @@ pub fn set_rate(state: State<AppState>, days_per_second: f64) {
     }
 }
 
+/// Move the clock. Up to 60 years away the current states (including any
+/// deflection) are integrated there; beyond that the catalogue orbits are
+/// re-placed with two-body motion.
 #[tauri::command]
-pub fn set_date(state: State<AppState>, jd: f64) -> Res<()> {
+pub async fn set_date(state: State<'_, AppState>, jd: f64) -> Res<()> {
     if !(2_378_496.5..=2_524_593.5).contains(&jd) {
         return Err("Date must be between 1800 and 2200".into());
     }
-    state.sim.write().jump_to(jd);
-    Ok(())
+    let sim = state.sim.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let (jd0, version, states, records) = {
+            let s = sim.read();
+            (s.jd, s.version, s.snapshot(), s.bodies.iter().map(|b| b.rec.clone()).collect::<Vec<_>>())
+        };
+        if (jd - jd0).abs() <= 60.0 * 365.25 {
+            let results = crate::sim::propagate_batch(&states, jd0, jd);
+            let mut s = sim.write();
+            if !s.apply_batch(version, jd0, jd, results) {
+                return Err("The simulation changed during the jump; try again".to_string());
+            }
+        } else {
+            let placed = crate::sim::place_records(&records, jd);
+            let mut s = sim.write();
+            if s.version != version {
+                return Err("The simulation changed during the jump; try again".to_string());
+            }
+            s.jd = jd;
+            for (b, (r, v)) in s.bodies.iter_mut().zip(placed) {
+                b.r = r;
+                b.v = v;
+                b.thrust = None;
+                b.impacted = None;
+                b.delta_v_ms = 0.0;
+            }
+            s.version = s.version.wrapping_add(1);
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
-pub fn sync_now(state: State<AppState>) -> Res<f64> {
+pub async fn sync_now(state: State<'_, AppState>) -> Res<f64> {
     let jd = now_jd();
-    set_date(state.clone(), jd)?;
+    set_date(state.clone(), jd).await?;
     let mut s = state.sim.write();
     s.rate = 1.0 / DAY_S;
     s.paused = false;
@@ -527,6 +560,23 @@ struct McProgressEvent {
 
 #[tauri::command]
 pub async fn run_monte_carlo(app: AppHandle, state: State<'_, AppState>, id: String, samples: usize, years: f64, mode: McMode) -> Res<RiskReport> {
+    // Catalogue presets come without covariance; fetch it on demand.
+    let needs_cov = matches!(mode, McMode::Covariance) && state.sim.read().body(&id).map(|b| b.rec.covariance.is_none()).unwrap_or(false);
+    if needs_cov {
+        if let Ok(full) = jpl::sbdb_object(&id).await {
+            let mut s = state.sim.write();
+            if let Some(k) = s.index_of(&id) {
+                let b = &mut s.bodies[k];
+                b.rec.covariance = full.covariance;
+                if b.rec.diameter_km.is_none() && full.diameter_km.is_some() {
+                    b.rec.diameter_km = full.diameter_km;
+                    b.rec.diameter_estimated = false;
+                }
+                b.rec.spectral = b.rec.spectral.clone().or(full.spectral);
+                b.rec.albedo = b.rec.albedo.or(full.albedo);
+            }
+        }
+    }
     let (r, v, t0, thrust, cov, mass, diameter) = {
         let s = state.sim.read();
         let b = s.body(&id).ok_or("Object not found")?;

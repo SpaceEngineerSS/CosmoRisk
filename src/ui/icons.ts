@@ -1,0 +1,55 @@
+// CosmoRisk icon set. Drawn on a 16px grid, 1.5px stroke, square caps,
+// mitred joins. Each entry is the inner SVG markup.
+
+const I: Record<string, string> = {
+  play: '<path d="M5 3.5v9l7-4.5z" fill="currentColor" stroke="none"/>',
+  pause: '<path d="M5 3.5v9M11 3.5v9"/>',
+  reverse: '<path d="M11 3.5v9L4 8z" fill="currentColor" stroke="none"/>',
+  slower: '<path d="M8 4 4 8l4 4M12.5 4l-4 4 4 4"/>',
+  faster: '<path d="M8 4l4 4-4 4M3.5 4l4 4-4 4"/>',
+  now: '<circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.25l2 1.25"/>',
+  calendar: '<path d="M2.5 4h11v9.5h-11zM2.5 7h11M5.5 2.5V5M10.5 2.5V5"/>',
+  search: '<circle cx="7" cy="7" r="4"/><path d="M10 10l3.5 3.5"/>',
+  sliders: '<path d="M2.5 4.5h11M2.5 11.5h11"/><path d="M5.5 3v3M10.5 10v3" stroke-width="2"/>',
+  info: '<circle cx="8" cy="8" r="5.5"/><path d="M8 7.25V11M8 5v.5"/>',
+  close: '<path d="M4 4l8 8M12 4l-8 8"/>',
+  plus: '<path d="M8 3.5v9M3.5 8h9"/>',
+  minus: '<path d="M3.5 8h9"/>',
+  reticle: '<path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/><circle cx="8" cy="8" r="1" fill="currentColor"/>',
+  sun: '<circle cx="8" cy="8" r="2.75"/><path d="M8 1.5v1.75M8 12.75v1.75M1.5 8h1.75M12.75 8h1.75M3.4 3.4l1.25 1.25M11.35 11.35l1.25 1.25M3.4 12.6l1.25-1.25M11.35 4.65l1.25-1.25"/>',
+  earth: '<circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c-2.2 2.6-2.2 8.4 0 11M8 2.5c2.2 2.6 2.2 8.4 0 11"/>',
+  orbit: '<ellipse cx="8" cy="8" rx="6" ry="3" transform="rotate(-25 8 8)"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/>',
+  list: '<path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.5M2.5 8h.5M2.5 12h.5"/>',
+  approach: '<circle cx="5" cy="11" r="2.5"/><path d="M2 2.5c5 0 10.5 2 11.5 9.5"/><path d="M11.75 9.75l1.75 2 1.25-2.25"/>',
+  warning: '<path d="M8 2.5l6 10.5H2z"/><path d="M8 6.5v3M8 11v.5"/>',
+  download: '<path d="M8 2.5V10M4.75 7 8 10.25 11.25 7M3 13.5h10"/>',
+  upload: '<path d="M8 10.5V3M4.75 6 8 2.75 11.25 6M3 13.5h10"/>',
+  camera: '<path d="M2.5 5h2.5l1.25-1.75h3.5L11 5h2.5v8h-11z"/><circle cx="8" cy="8.75" r="2.25"/>',
+  save: '<path d="M2.5 2.5h9l2 2v9h-11z"/><path d="M5 2.5V6h5V2.5M5 13.5V9.5h6v4"/>',
+  folder: '<path d="M2.5 4h4l1.5 1.5h5.5v8h-11z"/>',
+  trash: '<path d="M3 4.5h10M6.5 4.5V2.75h3V4.5M4.25 4.5l.75 9h6l.75-9"/>',
+  chevron: '<path d="M6 3.5 10.5 8 6 12.5"/>',
+  chevronDown: '<path d="M3.5 6 8 10.5 12.5 6"/>',
+  command: '<path d="M5.5 5.5h5v5h-5zM5.5 5.5H4a1.5 1.5 0 1 1 1.5-1.5zM10.5 5.5V4A1.5 1.5 0 1 1 12 5.5zM10.5 10.5H12a1.5 1.5 0 1 1-1.5 1.5zM5.5 10.5V12A1.5 1.5 0 1 1 4 10.5z"/>',
+  keyboard: '<path d="M1.5 4.5h13v7h-13z"/><path d="M4 7h.5M6.5 7H7M9 7h.5M11.5 7h.5M5 9.25h6"/>',
+  help: '<circle cx="8" cy="8" r="5.5"/><path d="M6.25 6.5a1.75 1.75 0 1 1 2.5 1.6c-.5.25-.75.6-.75 1.15v.25M8 11v.5"/>',
+  external: '<path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M11.5 9.5v4h-9v-9h4"/>',
+  deflect: '<path d="M2.5 13.5c0-6 4-9.5 10-9.5"/><path d="M10 1.75 12.5 4 10 6.25"/><circle cx="4" cy="6" r="1.25" fill="currentColor"/>',
+  scatter: '<circle cx="4" cy="5" r=".9" fill="currentColor"/><circle cx="8" cy="3.5" r=".9" fill="currentColor"/><circle cx="11.5" cy="6" r=".9" fill="currentColor"/><circle cx="6" cy="9" r=".9" fill="currentColor"/><circle cx="10" cy="10.5" r=".9" fill="currentColor"/><circle cx="4.5" cy="12.5" r=".9" fill="currentColor"/><circle cx="12.5" cy="12" r=".9" fill="currentColor"/>',
+  refresh: '<path d="M13 8a5 5 0 1 1-1.5-3.55"/><path d="M11.75 1.75v2.75H9"/>',
+  grid: '<path d="M2.5 2.5h11v11h-11zM2.5 6.17h11M2.5 9.83h11M6.17 2.5v11M9.83 2.5v11"/>',
+  tag: '<path d="M2.5 2.5h5.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle cx="5.5" cy="5.5" r=".75" fill="currentColor"/>',
+  check: '<path d="M3 8.5l3.25 3L13 4.5"/>',
+  dot: '<circle cx="8" cy="8" r="2" fill="currentColor" stroke="none"/>',
+  layers: '<path d="M8 2.5l6 3-6 3-6-3z"/><path d="M2 8.5l6 3 6-3"/><path d="M2 11.25l6 3 6-3"/>',
+  report: '<path d="M3.5 1.5h6l3 3v10h-9z"/><path d="M9.5 1.5v3h3M5.5 8h5M5.5 10.5h5M5.5 5.5h2"/>',
+  menu: '<path d="M2.5 4h11M2.5 8h11M2.5 12h11"/>',
+  stop: '<path d="M4 4h8v8H4z" fill="currentColor" stroke="none"/>',
+  focus: '<circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3"/>',
+};
+
+export type IconName = keyof typeof I;
+
+export function icon(name: IconName, cls = ''): string {
+  return `<svg class="ic ${cls}" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false">${I[name]}</svg>`;
+}
