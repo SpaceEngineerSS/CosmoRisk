@@ -1,97 +1,46 @@
-# Contributing to CosmoRisk
+# Contributing
 
-Thank you for your interest in contributing to CosmoRisk! This document provides guidelines for contributing.
+Thanks for taking an interest. Bug reports, physics corrections and translations are the most useful contributions.
 
-## 🚀 Getting Started
+## Getting set up
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/CosmoRisk.git
-   ```
-3. **Create a branch** for your changes:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+See [docs/building.md](docs/building.md). In short:
 
-## 📋 Development Setup
-
-### Prerequisites
-- Node.js v18+
-- Rust 1.70+
-- Tauri CLI
-
-### Running Locally
-```bash
+```sh
 npm install
 npm run tauri dev
 ```
 
-### Running Tests
-```bash
-# Rust tests
-cd src-tauri && cargo test
+## Before you open a pull request
 
-# TypeScript type check
-npm run build
+Run the same checks as CI:
+
+```sh
+npx tsc --noEmit
+cd src-tauri
+cargo test --release
+cargo clippy --all-targets -- -D warnings
+cargo fmt --check
 ```
 
-## 🔧 Code Guidelines
+- **Physics changes need a test.** If you change the model, show that it still reproduces a known result: compare against JPL Horizons or CAD, the way `apophis_2029_flyby` in `src-tauri/src/physics/propagate.rs` does.
+- **Keep the frontend dependency-light.** It is plain TypeScript with Three.js and Motion. Please discuss before adding a framework.
+- **All visible text goes through the locale files** in `src/core/locales/`. If you add a string, add it in English; a Turkish version is welcome too.
+- Match the existing style: small modules, comments that explain *why*, no dead code.
 
-### Rust (Backend)
-- Follow Rust conventions (`rustfmt`, `clippy`)
-- Document public functions with `///` comments
-- Use SI units internally (meters, seconds, kilograms)
-- Add unit tests for physics calculations
+## Reporting bugs
 
-### TypeScript (Frontend)
-- Use TypeScript strict mode
-- Follow existing code style
-- Document complex functions
+Use the bug report template. The most helpful things to include are:
 
-## 📐 Physics Contributions
+- the object designation
+- the simulation date
+- what you expected
+- for wrong numbers, the JPL value you compared against
 
-When adding new physics effects:
+## Translations
 
-1. **Reference Literature**: Cite academic sources
-2. **Document Formulas**: Add LaTeX comments
-3. **Add Unit Tests**: Validate against known solutions
-4. **Update README**: Add to Scientific Methodology section
+Copy `src/core/locales/en.ts` to a new file, translate the values, and register it in `src/core/i18n.ts` and the settings dialog. The TypeScript compiler will tell you if a key is missing.
 
-## 🐛 Bug Reports
+## Code of conduct
 
-When reporting bugs, include:
-- Operating system and version
-- Steps to reproduce
-- Expected vs actual behavior
-- Console error messages
-
-## ✨ Feature Requests
-
-Before suggesting new features:
-- Check existing issues
-- Explain the use case
-- Consider if it fits the project scope
-
-## 📝 Pull Request Process
-
-1. Update documentation if needed
-2. Add/update tests
-3. Ensure all tests pass
-4. Update CHANGELOG if applicable
-5. Request review from maintainers
-
-## 📜 Code of Conduct
-
-- Be respectful and inclusive
-- Provide constructive feedback
-- Focus on the code, not the person
-- Follow GitHub community guidelines
-
-## 📄 License
-
-By contributing, you agree that your contributions will be licensed under the MIT License.
-
----
-
-Thank you for helping make CosmoRisk better! 🌟
+Be kind. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

@@ -1,121 +1,49 @@
 # Changelog
 
-All notable changes to CosmoRisk will be documented in this file.
+All notable changes are listed here. Dates are in ISO format.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [3.0.0] - 2026-10-13
 
-## [2.0.1] - 18.12.2025
+A rewrite. Most of the 2.x physics was either approximate or wrong, so it was replaced rather than patched.
 
-### Added - Branding & Polish
-- CosmoRisk branding throughout application
-- Animated loading screen with SVG logo
-- "Track. Analyze. Defend." tagline
-- About modal with developer info (Mehmet Gümüş)
-- Settings modal with API key storage
-- Distance unit preferences (AU/km/LD)
+### Engine
+- Earth from VSOP87, the other planets from JPL's Keplerian approximations, and the Moon from a perturbed lunar theory, all evaluated at the simulation date. In 2.x the planets were frozen at J2000.
+- Asteroids are integrated as test particles under the Sun, eight planets and the Moon, with indirect terms. The RK4 step size adapts during encounters. The duplicate "phantom Moon" is gone.
+- Catalogue orbits are propagated from their epoch to the simulation date. In 2.x they were placed at the epoch's mean anomaly, regardless of date.
+- The time rate now works as labelled. In 2.x, "1 day/s" actually ran at about 250 days/s.
+- The Apophis 2029 flyby is reproduced to within ~100 km and ~20 s of JPL.
+- Earth impacts are detected inside integration steps.
 
-### Added - Visualization Enhancements
-- 3-layer Sun corona with animated glow (inner/middle/outer)
-- Earth blue marble appearance with dual-layer atmosphere
-- Rocky brown asteroid material with faceted shading
-- 50-point fading asteroid trails with gradient effect
-- Distance lines from selected asteroid to Earth
-- Selected asteroid orbit path visualization
-- Collision warning banner with pulse animation
+### Risk and deflection
+- The Monte Carlo samples the JPL orbit covariance, runs in parallel off the UI thread, can be cancelled, and reports a 95 % interval. In 2.x it always failed: its random generator produced NaN.
+- Impact energy, Torino and Palermo (Chesley 2002 background) are computed in Rust from real encounter speeds. The unit errors in 2.x had inflated energies by a factor of about 10⁶.
+- New flyby search, with a side-by-side comparison against JPL CAD.
+- Ion beam and gravity tractor are continuous thrust instead of an instant kick. A deflection preview shows the change in miss distance and the shift on the target plane.
 
-### Added - Analysis Tools
-- Torino Scale (0-10) impact hazard assessment with energy-based classification:
-  - Kinetic energy conversion: Joules → Megatons TNT
-  - Energy thresholds: harmless (<1 kt), local (1 kt-1 MT), regional (1-100 MT), national (100-1000 MT), global (1-100 GT), extinction (>100 GT)
-  - Probability × Energy matrix for accurate threat levels
-  - NASA CNEOS reference integration
-  - Display shows asteroid diameter and energy in MT/GT format
-- MOID Calculator with real distance-based calculations
-- Spectral type analysis (C/S/M/X/V)
-- Side-by-side asteroid comparison table modal
-- Asteroid info panel with Wikipedia links
-- Historical impact events (Chicxulub, Tunguska, etc.)
+### Data
+- Switched from NASA NeoWs (API key required) to the JPL SSD APIs (no key): SBDB, SBDB Query, CAD and Sentry.
+- Catalogue, Sentry list and scenarios are stored on disk, so the app works offline.
 
-### Added - Educational Features
-- 5-step interactive onboarding tutorial
-- 12-term scientific glossary modal
-- 10 "Did You Know" asteroid facts
-- What-If scenario save/load functionality
+### Interface
+- New design: a "mission control" layout, IBM Plex type, a custom icon set, and night and paper themes.
+- True-scale Sun, planets and Moon. The Earth texture rotates with sidereal time. The background uses the real Yale Bright Star Catalogue.
+- Command palette, inspector with numbered sections, timeline showing flyby markers.
+- English and Turkish.
+- Graphics tiers with automatic step-down, render-on-demand, frame interpolation and binary frame transport. The GPU memory leak from the 2.x trails is gone.
+- Fixed everything in the 2.x interface that did not work: the double click handler, off-by-one sliders, mobile panels, theme persistence, the hidden Monte Carlo panel, and the unreachable comparison table.
+- Strict CSP; external text is escaped.
+- Files are saved through the system save dialog.
 
-### Added - Mobile UX
-- Pinch-to-zoom gesture support
-- Swipe camera change (left/right)
-- Mobile bottom sheet for panel content
-- 3-button mobile bottom navigation
-- Touch gesture improvements
+### Project
+- Removed unused dependencies (React Three Fiber, drei, zustand, Tone.js, postprocessing) and template files.
+- Release workflow builds real installers for Windows, macOS and Linux.
+- New documentation in `docs/`.
 
-### Added - Settings & Controls
-- Dark/Light theme toggle (T key)
-- Settings persistence via localStorage
-- Zoom-to-fit all asteroids (F key)
-- Real-time date sync option
-- Multiple asteroid selection mode
-- Show hazardous only filter
+## [2.0.1] - 2025-12-18
+- Energy-based Torino scale, documentation updates.
 
-### Added - Export & Sharing
-- Text report generation for selected asteroid
-- Enhanced CSV data export
-- Screenshot capture (PNG)
-
-### Added - Physics Engine
-- Monte Carlo impact probability simulation
-- Jupiter perturbation calculations
-- Mars perturbation calculations
-- Trajectory preview after deflection (200-point projection)
-- **Moon perturbation calculations** for close Earth approaches
-
-### Fixed - 18.12.2025 (v2.0.1)
-- **3D Orbit Visualization** - Orbits now correctly rendered in 3D using full Keplerian elements (inclination, RAAN, argument of perihelion)
-- **MOID Calculation** - Replaced simplified distance-based approximation with proper orbital element sampling (72×72 points)
-- **Trajectory Preview** - Added Jupiter gravitational perturbation and Solar Radiation Pressure to deflection preview
-- **Splash Screen** - Replaced emoji-based animation with elegant minimal SVG orbit animation
-
-### Changed
-- Increased click detection threshold to 20 for better UX
-- Enhanced asteroid LOD system
-- Improved tooltip hover detection
-- Replaced "Scientific Mode" with "Show Hazardous Only" filter
-
-### Fixed
-- Trajectory preview now updates after deflection
-- Tooltip positioning and visibility
-- Mobile panel responsiveness
-
----
+## [2.0.0] - 2025-12-17
+- Multi-platform builds, deflection methods, Monte Carlo panel (see the 3.0.0 notes for what was wrong with it).
 
 ## [1.0.0] - 2024-12-18
-
-### Added
-- Initial release
-- Three.js visualization with procedural starfield
-- N-body physics simulation (Velocity Verlet integrator)
-- NASA NeoWs API integration
-- Real-time asteroid tracking
-- Kinetic impactor deflection simulation
-- Ion beam deflection simulation
-- J2 Earth oblateness perturbation
-- Solar Radiation Pressure effects
-- Yarkovsky thermal recoil effect
-- Energy conservation monitoring
-- Impact prediction display
-- Tauri desktop application framework
-- Comprehensive mobile UI with hamburger menu
-- Keyboard shortcuts
-- Toast notification system
-- Camera presets (Sun, Earth, Top-down view)
-- Search functionality for asteroids
-- Post-processing toggle (Bloom, SSAO, FXAA)
-
----
-
-## Developer
-
-**Mehmet Gümüş**
-- Website: [spacegumus.com.tr](https://spacegumus.com.tr)
-- GitHub: [@SpaceEngineerSS](https://github.com/SpaceEngineerSS)
+- First public version.

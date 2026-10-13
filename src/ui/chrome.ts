@@ -28,6 +28,7 @@ export function mountChrome() {
   scaleBar = $('#scalebar-bar');
   renderTools();
   renderLegend();
+  setText(topObjects, String(state.bodies.length));
   bus.on('lang', () => {
     renderTools();
     renderLegend();

@@ -1,276 +1,81 @@
 # CosmoRisk
 
-## High-Fidelity NEO Defense Simulator
+A desktop simulator for near-Earth asteroids. It loads real orbits from NASA/JPL, moves them under the gravity of the Sun, the planets and the Moon, finds when they pass Earth, estimates the chance of a hit, and lets you try pushing them out of the way.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/SpaceEngineerSS/CosmoRisk)
-[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/SpaceEngineerSS/CosmoRisk/releases)
-[![Rust](https://img.shields.io/badge/Rust-1.70+-orange.svg)](https://www.rust-lang.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![VirusTotal](https://img.shields.io/badge/VirusTotal-Clean-green.svg)](https://www.virustotal.com/)
+![CosmoRisk with the potentially hazardous asteroids loaded and 99942 Apophis selected](docs/img/screens/overview.png)
 
-![CosmoRisk - NEO Defense Simulator](assets/demo.png)
+I started CosmoRisk as a visual toy. Version 3 is a rewrite with one goal: the numbers on screen should be right. As a check, the engine reproduces the April 2029 Apophis flyby within about 100 km and 20 seconds of JPL's solution:
 
-**CosmoRisk** is a state-of-the-art, physics-accurate Near-Earth Object (NEO) tracking and deflection simulator. Built with Rust for computational precision and Three.js for cinematic visualization.
+| 99942 Apophis, 2029 | JPL CAD | CosmoRisk 3 |
+|---|---:|---:|
+| Closest approach (UTC) | 2029-04-13 21:46 | 2029-04-13 21:44 |
+| Distance from Earth's centre | 38,011 km | 37,917 km |
+| Relative speed | 7.42 km/s | 7.43 km/s |
 
----
+![Apophis passing between Earth and the Moon's orbit on 13 April 2029](docs/img/screens/apophis-2029.png)
 
-## 🚀 Features
+## What it does
 
-### Core Simulation
-- **N-Body Gravity Simulation** - Accurate gravitational interactions between Sun, Earth, Moon, and thousands of asteroids
-- **NASA NeoWs Integration** - Real asteroid data from NASA's Near-Earth Object Web Service
-- **Monte Carlo Impact Probability** - Statistical impact risk analysis
+- **Real data, no key.** Catalogue sets (potentially hazardous asteroids, NEOs larger than about 1 km) come from the JPL Small-Body Database, along with physical data and the orbit covariance for single objects. Upcoming close approaches come from JPL CAD, and the impact-monitoring list from JPL Sentry. Everything is cached, so the app also works offline.
+- **Physics you can check.** Earth's position comes from VSOP87, the other planets from JPL's Keplerian approximations, and the Moon from a perturbed lunar theory. Asteroids are integrated with RK4 under the Sun, eight planets and the Moon, and the step size shrinks automatically during close encounters.
+- **Flyby search.** Lists every pass within 0.05 AU of Earth for the next 10–100 years and puts it next to JPL's own numbers.
+- **Impact probability.** Monte Carlo sampling of the real JPL orbit covariance, reported with a 95 % interval and with Torino and Palermo ratings. For objects on JPL's Sentry list, the official assessment is shown beside it.
+- **Deflection.** Kinetic impactor (DART-style β), ion beam shepherd and gravity tractor. Preview shows the new miss distance and the shift on the target plane before you commit.
+- **Runs on modest hardware.** Rendering drops to on-demand when nothing moves. Low, medium and high graphics tiers are picked automatically from your GPU, and the app steps down by itself if the frame rate falls. With 1,000 asteroids, one physics step takes about 1.5 ms.
+- English and Turkish interface, a dark "night" theme and a light "paper" theme, a keyboard-first command palette (Ctrl K), saved scenarios, and Markdown reports and CSV exports.
 
-### Deflection Methods
-- **Kinetic Impactor** - Instantaneous Δv impulse (DART-like)
-- **Ion Beam Deflection** - Continuous low-thrust over extended duration
-- **Gravity Tractor** - Passive gravitational deflection (backend)
+## Install
 
-### Visualization
-- **3D Celestial Bodies** - Sun (3-layer corona), Earth (blue marble + atmosphere), Moon
-- **Asteroid Rendering** - Rocky brown material with faceted shading, LOD system
-- **Asteroid Trails** - 50-point fading gradient trails
-- **Distance Lines** - Visual connection from asteroid to Earth
-- **Post-Processing** - Unreal Bloom, SSAO, FXAA for cinematic quality
+Installers for Windows, macOS and Linux are on the [releases page](https://github.com/SpaceEngineerSS/CosmoRisk/releases). The builds are not code-signed yet, so Windows SmartScreen and macOS Gatekeeper will ask before running them.
 
-### Analysis Tools
-- **Torino Scale** - 0-10 impact hazard classification based on kinetic energy (Joules → Megatons TNT) and probability
-- **MOID Calculator** - Proper orbital intersection distance using 72×72 point sampling
-- **3D Orbit Visualization** - Accurate Keplerian orbits with inclination, RAAN, and argument of perihelion
-- **Spectral Type Analysis** - C/S/M/X/V composition types
-- **Comparison Table** - Side-by-side asteroid data comparison
-- **Energy Conservation Chart** - Real-time energy drift monitoring
+To build it yourself you need Rust (1.77 or newer) and Node.js 20:
 
-### Educational Features
-- **Onboarding Tutorial** - 5-step interactive guide
-- **Glossary** - 12 scientific terms explained
-- **"Did You Know" Facts** - 10 asteroid fun facts
-- **Historical Impacts** - Chicxulub, Tunguska, and more
-- **What-If Scenarios** - Save/load simulation states
-
-### Mobile UX
-- **Pinch-to-Zoom** - 2-finger zoom gesture
-- **Swipe Camera** - Horizontal swipe to change camera
-- **Bottom Sheet** - Panel content for mobile screens
-- **Mobile Navigation** - 3-button bottom nav bar
-
----
-
-## 📐 Scientific Methodology
-
-### Integrator
-We use the **Velocity Verlet** symplectic integrator for energy conservation:
-
-$$x(t+\Delta t) = x(t) + v(t)\Delta t + \frac{1}{2}a(t)\Delta t^2$$
-
-$$v(t+\Delta t) = v(t) + \frac{1}{2}[a(t) + a(t+\Delta t)]\Delta t$$
-
-### Perturbations
-
-| Effect | Formula | Reference |
-|--------|---------|-----------|
-| **J2 Oblateness** | $a_{J_2} = -\frac{3}{2} J_2 \frac{\mu R_E^2}{r^5} [x(1-5z^2/r^2), y(1-5z^2/r^2), z(3-5z^2/r^2)]$ | Vallado (2007) |
-| **Solar Radiation Pressure** | $a_{SRP} = \frac{P \cdot A \cdot C_R}{m} \cdot \hat{r}$ | Montenbruck & Gill (2000) |
-| **Yarkovsky Effect** | $\frac{da}{dt} \approx \frac{\alpha}{D \cdot r^2}$ | Vokrouhlický et al. (2000) |
-| **Jupiter Perturbation** | N-body gravitational influence | Orbital mechanics |
-| **Mars Perturbation** | N-body gravitational influence | Orbital mechanics |
-| **Moon Perturbation** | N-body gravitational influence | Close Earth approaches |
-
-### Physical Constants
-
-```
-G         = 6.67430×10⁻¹¹ m³/(kg·s²)      Gravitational constant
-AU        = 1.495978707×10¹¹ m            Astronomical Unit
-μ_Sun     = 1.327124×10²⁰ m³/s²           Sun's gravitational parameter
-μ_Earth   = 3.986004×10¹⁴ m³/s²           Earth's gravitational parameter
-μ_Moon    = 4.904869×10¹² m³/s²           Moon's gravitational parameter
-J₂_Earth  = 1.08263×10⁻³                   Earth oblateness coefficient
-R_Earth   = 6.378137×10⁶ m                Earth equatorial radius
-P_SRP     = 4.56×10⁻⁶ N/m²                Solar radiation pressure (1 AU)
-```
-
-### Torino Scale Methodology
-
-Kinetic energy is converted to Megatons TNT for threat classification:
-
-$$E_{MT} = \frac{E_{Joules}}{4.184 \times 10^{15}}$$
-
-| Energy Range | Classification | Example |
-|--------------|----------------|---------|
-| < 1 kiloton | Harmless | Burns up |
-| 1 kt - 1 MT | Local | Chelyabinsk (~500 kt) |
-| 1 - 100 MT | Regional | Tunguska (~15 MT) |
-| 100 MT - 1 GT | National | Large city destruction |
-| 1 - 100 GT | Global | Nuclear winter |
-| > 100 GT | Extinction | Chicxulub |
-
-Reference: [NASA CNEOS Torino Scale](https://cneos.jpl.nasa.gov/sentry/torino_scale.html)
-
----
-
-## 🛠️ Installation
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) v18+
-- [Rust](https://www.rust-lang.org/tools/install) 1.70+
-- [Tauri CLI](https://tauri.app/v1/guides/getting-started/prerequisites)
-
-### Setup
-
-```bash
-# Clone repository
+```sh
 git clone https://github.com/SpaceEngineerSS/CosmoRisk.git
 cd CosmoRisk
-
-# Install dependencies
 npm install
-
-# Run in development mode
-npm run tauri dev
-
-# Build production executable
-npm run tauri build
+npm run tauri dev      # development
+npm run tauri build    # installer for your platform
 ```
 
-### 📥 Pre-Built Downloads (Windows)
+On Linux you also need the WebKitGTK development packages. [docs/building.md](docs/building.md) has the details.
 
-Download the latest release from [GitHub Releases](https://github.com/SpaceEngineerSS/CosmoRisk/releases).
+## Using it
 
-#### ⚠️ Windows SmartScreen Warning
+1. Click **Load from JPL** with *Potentially hazardous* selected. It takes a few seconds the first time.
+2. Click any dot, or type a name in the command palette (Ctrl K). Apophis, Bennu and 2024 YR4 are good ones to start with.
+3. In the inspector, **Find flybys** shows upcoming passes. **Run Monte Carlo** estimates the impact probability. **Deflection → Preview** shows what a push would change.
+4. Space runs the clock, and `[` `]` (or `−` `+`) change its speed.
 
-When running the `.exe` for the first time, Windows SmartScreen may show a warning because the application is new and not yet widely distributed. **This is normal for new software.**
+The full guide is in [docs/](docs/README.md). [docs/tr/](docs/tr/README.md) has a Turkish version.
 
-**To run the application:**
-1. Click **"More info"** on the warning dialog
-2. Click **"Run anyway"**
+## Limits
 
-![SmartScreen Bypass](assets/smartscreen-bypass.png)
+This is a careful simulator, not a replacement for JPL's tools. The main limits:
 
-#### 🔒 Security Verification
+- Non-gravitational forces (the Yarkovsky effect), relativity and asteroid–asteroid perturbations are not modelled.
+- The planetary ephemeris is analytic, not a JPL DE file.
+- After a deep close approach such as Apophis in 2029, trajectories become chaotic, so passes decades later should be read as indicative only.
 
-We take security seriously. You can verify the application is safe:
+[docs/physics.md](docs/physics.md) gives the details and the error budget.
 
-| Verification | Link |
-|--------------|------|
-| **VirusTotal Scan** | [View Scan Results](https://www.virustotal.com/gui/file/29bedc4595de31cdcb0a80b3620438a215761b72fd641302bc94e01387f2df90) |
-| **Source Code** | [GitHub Repository](https://github.com/SpaceEngineerSS/CosmoRisk) |
-| **Publisher** | Mehmet Gümüş |
+## Documentation
 
-> **Note:** The exe is signed with a self-signed certificate. File properties will show "Mehmet Gümüş" as the publisher.
+- [Getting started](docs/getting-started.md)
+- [The interface](docs/interface.md)
+- [Physics model](docs/physics.md)
+- [Impact risk: Monte Carlo, Torino, Palermo](docs/risk.md)
+- [Deflection methods](docs/deflection.md)
+- [Data sources and caching](docs/data-sources.md)
+- [Building and releasing](docs/building.md)
+- [FAQ](docs/faq.md)
 
----
+## Citing
 
-## 🎮 Usage
+If CosmoRisk is useful in your work, see [CITATION.cff](CITATION.cff).
 
-1. **Obtain NASA API Key**: Get a free key from [NASA API Portal](https://api.nasa.gov/)
-2. **Enter API Key**: Paste in the left panel's "NASA API Key" field
-3. **Fetch NEOs**: Click "Fetch NEOs" to load real asteroid data
-4. **Select Asteroid**: Click on any asteroid to view details
-5. **Apply Deflection**: Use kinetic impactor (Δv) or ion beam controls
-6. **Monitor Impact Prediction**: Watch the "Impact Prediction" panel
+## License
 
-### Keyboard Shortcuts
+MIT, see [LICENSE](LICENSE). The data belongs to its providers: orbital and physical data come from NASA/JPL SSD/CNEOS, the stars from the Yale Bright Star Catalogue (Hoffleit & Warren, 5th ed.), the Earth texture is NASA Visible Earth "Blue Marble", and the Moon texture is from NASA's Lunar Reconnaissance Orbiter (LROC).
 
-| Key | Action |
-|-----|--------|
-| `Space` | Play/Pause |
-| `R` | Reset simulation |
-| `+/-` | Speed up/slow down |
-| `1/2/3` | Camera presets (Sun/Earth/Top) |
-| `O` | Toggle orbit visibility |
-| `G` | Toggle grid |
-| `F` | Zoom to fit all asteroids |
-| `T` | Toggle theme (dark/light) |
-| `D` | Show random asteroid fact |
-| `?` | Show shortcuts modal |
-
----
-
-## 📊 Performance
-
-| Metric | Value |
-|--------|-------|
-| Max Asteroids | 10,000+ |
-| LOD System | Distance-based Points/Mesh |
-| Target FPS | 60 |
-| Achieved FPS | 53-62 |
-| Energy Drift | < 10⁻⁵ over 100 years |
-
----
-
-## 🗺️ Roadmap
-
-### Completed ✅
-- [x] N-Body gravity simulation
-- [x] Velocity Verlet integrator
-- [x] NASA NeoWs API integration
-- [x] Kinetic impactor deflection
-- [x] Ion beam deflection
-- [x] Gravity tractor (backend)
-- [x] Yarkovsky thermal effect
-- [x] Jupiter/Mars perturbations
-- [x] Monte Carlo impact probability
-- [x] Post-processing (Bloom, SSAO, FXAA)
-- [x] Torino Scale & MOID analysis
-- [x] Tutorial & Glossary
-- [x] Theme toggle & settings persistence
-- [x] Mobile touch gestures
-- [x] Asteroid trails (fading)
-- [x] Comparison table
-- [x] Mobile bottom sheet
-
-### Future 🔮
-- [ ] Relativistic precession
-- [ ] VR/AR support
-- [ ] JPL Horizons integration
-
----
-
-## 📖 Citation
-
-If you use CosmoRisk in your research, please cite:
-
-```bibtex
-@software{cosmorisk_2025,
-  author = {Mehmet Gümüş},
-  title = {CosmoRisk: High-Fidelity NEO Defense Simulator},
-  version = {2.0.1},
-  year = {2025},
-  url = {https://github.com/SpaceEngineerSS/CosmoRisk}
-}
-```
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
----
-
-## 👨‍💻 Developer
-
-This project was developed by **Mehmet Gümüş**.
-
-- 🌐 Website: [spacegumus.com.tr](https://spacegumus.com.tr)
-- 🐙 GitHub: [@SpaceEngineerSS](https://github.com/SpaceEngineerSS)
-
----
-
-## 🙏 Acknowledgments
-
-- NASA Near-Earth Object Program
-- Three.js community
-- Tauri team
-- Academic references: Vallado (2007), Montenbruck & Gill (2000), Vokrouhlický et al. (2000)
-
----
-
-*Last updated: 18.12.2025*
+Mehmet Gümüş · [spacegumus.com.tr](https://spacegumus.com.tr) · [@SpaceEngineerSS](https://github.com/SpaceEngineerSS)

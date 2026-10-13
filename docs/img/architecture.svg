@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 470" width="880" height="470" font-family="'IBM Plex Sans Condensed','Arial Narrow',Arial,sans-serif">
+<rect width="880" height="470" fill="#111214"/>
+<text x="40.0" y="40.0" font-size="11" fill="#ffb000" text-anchor="start" font-weight="400" font-family="'IBM Plex Mono',Consolas,'Courier New',monospace" >01</text><text x="64.0" y="40.0" font-size="11" fill="#c2bdb2" text-anchor="start" font-weight="600" letter-spacing="1.6" >HOW THE PIECES FIT</text>
+<text x="40.0" y="60.0" font-size="12" fill="#908c83" text-anchor="start" font-weight="400" >One desktop process. Rust does the physics and networking, the web view only draws.</text>
+<rect x="40" y="90" width="330" height="190" fill="#17181b" stroke="#393c41"/>
+<rect x="40" y="90" width="3" height="190" fill="#8fb0d4"/>
+<text x="56.0" y="114.0" font-size="11" fill="#ece8df" text-anchor="600" font-weight="400" letter-spacing="1.4" >FRONTEND · TYPESCRIPT</text>
+<text x="56.0" y="138.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >Three.js view, true-scale bodies</text>
+<text x="56.0" y="157.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >screen-space markers, star catalogue</text>
+<text x="56.0" y="176.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >panels, palette, i18n (EN/TR)</text>
+<text x="56.0" y="195.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >interpolates frames to display rate</text>
+<rect x="510" y="90" width="330" height="330" fill="#17181b" stroke="#393c41"/>
+<rect x="510" y="90" width="3" height="330" fill="#ffb000"/>
+<text x="526.0" y="114.0" font-size="11" fill="#ece8df" text-anchor="600" font-weight="400" letter-spacing="1.4" >ENGINE · RUST</text>
+<text x="526.0" y="138.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >ephemeris: VSOP87 Earth, Standish planets,</text>
+<text x="526.0" y="157.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >   perturbed Moon</text>
+<text x="526.0" y="176.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >propagator: RK4, Sun + 8 planets + Moon,</text>
+<text x="526.0" y="195.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >   encounter-aware step size</text>
+<text x="526.0" y="214.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >risk: Monte Carlo on JPL covariance,</text>
+<text x="526.0" y="233.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >   Torino, Palermo, target plane</text>
+<text x="526.0" y="252.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >deflection: impulse and low thrust</text>
+<text x="526.0" y="271.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >physics thread advances in real time</text>
+<text x="526.0" y="290.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >data: JPL clients, disk cache, scenarios</text>
+<rect x="40" y="320" width="330" height="100" fill="#17181b" stroke="#393c41"/>
+<rect x="40" y="320" width="3" height="100" fill="#6fbf8a"/>
+<text x="56.0" y="344.0" font-size="11" fill="#ece8df" text-anchor="600" font-weight="400" letter-spacing="1.4" >JPL SSD APIS</text>
+<text x="56.0" y="368.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >SBDB, SBDB Query, CAD, Sentry</text>
+<text x="56.0" y="387.0" font-size="12" fill="#c2bdb2" text-anchor="start" font-weight="400" >public, no API key</text>
+<line x1="370" y1="150" x2="510" y2="150" stroke="#908c83" stroke-width="1.2"/>
+<line x1="510" y1="150" x2="501.9" y2="146.2" stroke="#908c83" stroke-width="1.2"/>
+<line x1="510" y1="150" x2="501.9" y2="153.8" stroke="#908c83" stroke-width="1.2"/>
+<text x="440.0" y="142.0" font-size="11" fill="#908c83" text-anchor="middle" font-weight="400" font-family="'IBM Plex Mono',Consolas,'Courier New',monospace" >commands (JSON)</text>
+<line x1="510" y1="210" x2="370" y2="210" stroke="#908c83" stroke-width="1.2"/>
+<line x1="370" y1="210" x2="378.1" y2="213.8" stroke="#908c83" stroke-width="1.2"/>
+<line x1="370" y1="210" x2="378.1" y2="206.2" stroke="#908c83" stroke-width="1.2"/>
+<text x="440.0" y="202.0" font-size="11" fill="#908c83" text-anchor="middle" font-weight="400" font-family="'IBM Plex Mono',Consolas,'Courier New',monospace" >frame, 30 Hz (binary)</text>
+<line x1="510" y1="370" x2="370" y2="370" stroke="#908c83" stroke-width="1.2"/>
+<line x1="370" y1="370" x2="378.1" y2="373.8" stroke="#908c83" stroke-width="1.2"/>
+<line x1="370" y1="370" x2="378.1" y2="366.2" stroke="#908c83" stroke-width="1.2"/>
+<text x="440.0" y="362.0" font-size="11" fill="#908c83" text-anchor="middle" font-weight="400" font-family="'IBM Plex Mono',Consolas,'Courier New',monospace" >HTTPS</text>
+<text x="440.0" y="440.0" font-size="11" fill="#6c6962" text-anchor="middle" font-weight="400" font-family="'IBM Plex Mono',Consolas,'Courier New',monospace" >app data dir: catalogue cache, scenarios</text>
+</svg>

@@ -27,7 +27,11 @@ pub struct Thrust {
 impl Thrust {
     #[inline]
     fn accel_at(&self, r: Vec3, v: Vec3, t: f64) -> Vec3 {
-        let (lo, hi) = if self.start <= self.end { (self.start, self.end) } else { (self.end, self.start) };
+        let (lo, hi) = if self.start <= self.end {
+            (self.start, self.end)
+        } else {
+            (self.end, self.start)
+        };
         if t < lo || t > hi {
             return Vec3::ZERO;
         }
@@ -69,20 +73,30 @@ impl Step {
         let p1 = self.r1 - self.e1;
         let dp = p1 - p0;
         let dd = dp.norm2();
-        let s = if dd > 0.0 { (-(p0.dot(dp)) / dd).clamp(0.0, 1.0) } else { 0.0 };
+        let s = if dd > 0.0 {
+            (-(p0.dot(dp)) / dd).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
         ((p0 + dp * s).norm(), self.t0 + s * (self.t1 - self.t0))
     }
 }
 
 impl<'a> Propagator<'a> {
     pub fn new(table: &'a EphemerisTable) -> Self {
-        Self { table, gm: gm_table() }
+        Self {
+            table,
+            gm: gm_table(),
+        }
     }
 
     /// Sun-only force model, for testing the integrator in isolation.
     #[cfg(test)]
     pub fn sun_only(table: &'a EphemerisTable) -> Self {
-        Self { table, gm: [0.0; N_PLANETS] }
+        Self {
+            table,
+            gm: [0.0; N_PLANETS],
+        }
     }
 
     #[inline]
@@ -154,7 +168,15 @@ impl<'a> Propagator<'a> {
     /// Propagate from `t0` to `t1` (forwards or backwards). `observe` sees
     /// every step and may return `false` to stop early (e.g. on impact).
     /// Returns the final state and the time actually reached.
-    pub fn advance<F>(&self, mut r: Vec3, mut v: Vec3, t0: f64, t1: f64, thrust: Option<&Thrust>, mut observe: F) -> (Vec3, Vec3, f64)
+    pub fn advance<F>(
+        &self,
+        mut r: Vec3,
+        mut v: Vec3,
+        t0: f64,
+        t1: f64,
+        thrust: Option<&Thrust>,
+        mut observe: F,
+    ) -> (Vec3, Vec3, f64)
     where
         F: FnMut(&Step) -> bool,
     {
@@ -225,7 +247,14 @@ pub struct EncounterScanner {
 
 impl EncounterScanner {
     pub fn new(threshold_au: f64) -> Self {
-        Self { threshold_au, encounters: Vec::new(), closest: None, prev: None, prev_prev_d: None, impacted: false }
+        Self {
+            threshold_au,
+            encounters: Vec::new(),
+            closest: None,
+            prev: None,
+            prev_prev_d: None,
+            impacted: false,
+        }
     }
 
     /// Feed one step. Returns false once the body has hit Earth.
@@ -280,8 +309,20 @@ impl EncounterScanner {
         self.encounters.push(enc);
     }
 
-    fn make(&self, prop: &Propagator, step: &Step, t: f64, d: f64, v_at: &impl Fn(f64) -> Vec3, impact: bool) -> Encounter {
-        let s = if (step.t1 - step.t0).abs() > 0.0 { (t - step.t0) / (step.t1 - step.t0) } else { 0.0 };
+    fn make(
+        &self,
+        prop: &Propagator,
+        step: &Step,
+        t: f64,
+        d: f64,
+        v_at: &impl Fn(f64) -> Vec3,
+        impact: bool,
+    ) -> Encounter {
+        let s = if (step.t1 - step.t0).abs() > 0.0 {
+            (t - step.t0) / (step.t1 - step.t0)
+        } else {
+            0.0
+        };
         let r = step.r0 + (step.r1 - step.r0) * s;
         let e = step.e0 + (step.e1 - step.e0) * s;
         let ve = prop.earth_velocity(t);
@@ -302,7 +343,8 @@ impl EncounterScanner {
         let focus = (1.0 + 2.0 * gm_e / (d.max(EARTH_RADIUS_AU) * vinf * vinf)).sqrt();
         let bx = p.dot(xi) * focus * AU_KM;
         let bz = p.dot(zeta) * focus * AU_KM;
-        let capture = EARTH_RADIUS_KM * (1.0 + (EARTH_ESCAPE_KMS / vinf_kms.max(0.01)).powi(2)).sqrt();
+        let capture =
+            EARTH_RADIUS_KM * (1.0 + (EARTH_ESCAPE_KMS / vinf_kms.max(0.01)).powi(2)).sqrt();
 
         Encounter {
             jd: t,
@@ -357,7 +399,15 @@ mod tests {
     #[test]
     fn two_body_energy_is_conserved_over_a_year() {
         // Eccentric NEO-like orbit, Sun only: tests the integrator itself.
-        let el = Elements { a: 1.2, e: 0.6, i: 0.1, node: 1.0, peri: 2.0, m: 0.5, epoch: 2_461_000.5 };
+        let el = Elements {
+            a: 1.2,
+            e: 0.6,
+            i: 0.1,
+            node: 1.0,
+            peri: 2.0,
+            m: 0.5,
+            epoch: 2_461_000.5,
+        };
         let (r, v) = el.state_at(el.epoch, GM_SUN);
         let table = EphemerisTable::build(el.epoch, el.epoch + 366.0);
         let prop = Propagator::sun_only(&table);
@@ -367,7 +417,11 @@ mod tests {
         assert!(((e1 - e0) / e0).abs() < 1e-8, "drift {}", (e1 - e0) / e0);
         // and the position matches the analytic two-body solution
         let (ra, _) = el.state_at(el.epoch + 365.25, GM_SUN);
-        assert!((r1 - ra).norm() * AU_KM < 50.0, "position error {} km", (r1 - ra).norm() * AU_KM);
+        assert!(
+            (r1 - ra).norm() * AU_KM < 50.0,
+            "position error {} km",
+            (r1 - ra).norm() * AU_KM
+        );
     }
 
     #[test]
@@ -400,7 +454,11 @@ mod tests {
         // JPL CAD: 2029-Apr-13 21:46 TDB (JD 2462240.4071), 38,011 km, 7.42 km/s.
         // This engine gets ~37,900 km within a minute of the JPL time.
         assert!((c.jd - 2_462_240.407_1).abs() < 0.01, "date {}", c.jd);
-        assert!((c.dist_km - 38_011.0).abs() < 1_500.0, "distance {} km", c.dist_km);
+        assert!(
+            (c.dist_km - 38_011.0).abs() < 1_500.0,
+            "distance {} km",
+            c.dist_km
+        );
         assert!((c.v_rel_kms - 7.42).abs() < 0.1, "v_rel {}", c.v_rel_kms);
         assert!(!scan.impacted);
     }

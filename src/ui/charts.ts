@@ -60,7 +60,9 @@ export function drawMissHistogram(canvas: HTMLCanvasElement, distancesKm: number
   for (let e = lo; e <= hi; e++) {
     const x = pad.l + ((e - lo) / (hi - lo)) * pw;
     g.fillRect(Math.round(x), h - pad.b, 1, 4);
-    g.fillText(e === 0 ? '1 LD' : `10${e < 0 ? '⁻' : ''}${'⁰¹²³⁴⁵⁶⁷⁸⁹'[Math.abs(e)]}`, x, h - 4);
+    g.textAlign = e === lo ? 'left' : e === hi ? 'right' : 'center';
+    const label = e === 0 ? '1' : `10${e < 0 ? '⁻' : ''}${'⁰¹²³⁴⁵⁶⁷⁸⁹'[Math.abs(e)]}`;
+    g.fillText(e === hi ? `${label} LD` : label, x, h - 4);
   }
   // Earth radius marker
   const xe = pad.l + ((Math.log10(earthLd) - lo) / (hi - lo)) * pw;
@@ -133,15 +135,28 @@ export function drawBPlane(canvas: HTMLCanvasElement, before: Encounter | null, 
   g.fill();
   g.globalAlpha = 1;
 
-  const dot = (e: Encounter, color: string, label: string) => {
-    const x = cx + e.b_plane_km[0] * s;
-    const y = cy - e.b_plane_km[1] * s;
-    g.fillStyle = color;
-    g.fillRect(Math.round(x) - 3, Math.round(y) - 3, 6, 6);
-    g.fillText(label, x + 6, y - 5);
+  // A is drawn hollow and labelled on the left, B filled on the right, so
+  // both stay readable when a small push barely moves the point.
+  const dot = (e: Encounter, color: string, label: string, hollow: boolean) => {
+    const x = Math.round(cx + e.b_plane_km[0] * s);
+    const y = Math.round(cy - e.b_plane_km[1] * s);
+    if (hollow) {
+      g.strokeStyle = color;
+      g.lineWidth = 1.5;
+      g.strokeRect(x - 4.5, y - 4.5, 9, 9);
+      g.lineWidth = 1;
+      g.fillStyle = color;
+      g.textAlign = 'right';
+      g.fillText(label, x - 8, y + 3);
+    } else {
+      g.fillStyle = color;
+      g.fillRect(x - 2.5, y - 2.5, 5, 5);
+      g.textAlign = 'left';
+      g.fillText(label, x + 8, y + 3);
+    }
   };
-  if (before) dot(before, accent, 'A');
-  if (after) dot(after, ok, 'B');
+  if (before) dot(before, accent, 'A', true);
+  if (after) dot(after, ok, 'B', false);
   if (before && after) {
     g.strokeStyle = fg;
     g.setLineDash([2, 2]);

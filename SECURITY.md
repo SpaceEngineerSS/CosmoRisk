@@ -4,8 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.0.x   | :white_check_mark: |
-| < 2.0   | :x:                |
+| 3.x     | yes                |
+| < 3.0   | no                 |
 
 ## Reporting a Vulnerability
 
@@ -36,7 +36,8 @@ If you discover a security vulnerability in CosmoRisk, please report it responsi
 ## Security Measures
 
 This application:
-- Does not store NASA API keys on any server (local storage only)
+- Needs no API keys; talks only to ssd-api.jpl.nasa.gov over HTTPS
+- Runs the interface under a strict Content Security Policy and escapes all external text
 - Does not collect or transmit personal data
 - Uses HTTPS for all API communications
 - Runs in a sandboxed Tauri environment

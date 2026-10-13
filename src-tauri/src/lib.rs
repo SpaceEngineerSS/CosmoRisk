@@ -1,7 +1,11 @@
 //! CosmoRisk: near-Earth object simulator.
 
 // Index loops read better than iterator chains in the numeric code.
-#![allow(clippy::needless_range_loop, clippy::too_many_arguments, clippy::type_complexity)]
+#![allow(
+    clippy::needless_range_loop,
+    clippy::too_many_arguments,
+    clippy::type_complexity
+)]
 
 mod commands;
 mod data;

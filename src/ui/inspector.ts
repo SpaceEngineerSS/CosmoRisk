@@ -60,10 +60,7 @@ export function mountInspector(host: HTMLElement) {
     'quick-yr4': () => loadDesignation('2024 YR4'),
   });
 
-  bus.on('select', () => {
-    render();
-    schedulePoll();
-  });
+  bus.on('select', () => render());
   bus.on('bodies', () => {
     if (state.selected) refreshDetail();
   });
@@ -130,6 +127,7 @@ function render() {
   renderScan();
   refreshDetail();
   refreshOrbit();
+  schedulePoll();
 }
 
 function renderTags() {

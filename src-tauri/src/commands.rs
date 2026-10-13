@@ -25,7 +25,11 @@ pub struct AppState {
 
 impl AppState {
     pub fn new() -> Self {
-        Self { sim: Arc::new(RwLock::new(Sim::new())), store: Mutex::new(None), mc_cancel: Arc::new(AtomicBool::new(false)) }
+        Self {
+            sim: Arc::new(RwLock::new(Sim::new())),
+            store: Mutex::new(None),
+            mc_cancel: Arc::new(AtomicBool::new(false)),
+        }
     }
 
     fn with_store<T>(&self, f: impl FnOnce(&Store) -> Result<T, String>) -> Result<T, String> {
@@ -110,7 +114,11 @@ pub fn get_planets(state: State<AppState>) -> Vec<PlanetInfo> {
     PLANETS
         .iter()
         .enumerate()
-        .map(|(k, p)| PlanetInfo { id: p.id(), radius_km: p.radius_km(), orbit: ephemeris::orbit_path(k, jd, 360) })
+        .map(|(k, p)| PlanetInfo {
+            id: p.id(),
+            radius_km: p.radius_km(),
+            orbit: ephemeris::orbit_path(k, jd, 360),
+        })
         .collect()
 }
 
@@ -140,11 +148,22 @@ pub fn get_body_detail(state: State<AppState>, id: String) -> Res<BodyDetail> {
     let pp = ephemeris::positions(s.jd);
     let ve = ephemeris::velocity(IDX_EARTH, s.jd);
     let osc = Elements::from_state(b.r, b.v, GM_SUN, s.jd).map(|el| {
-        [el.a, el.e, el.i.to_degrees(), el.node.to_degrees(), el.peri.to_degrees(), el.m.to_degrees(), el.period(GM_SUN)]
+        [
+            el.a,
+            el.e,
+            el.i.to_degrees(),
+            el.node.to_degrees(),
+            el.peri.to_degrees(),
+            el.m.to_degrees(),
+            el.period(GM_SUN),
+        ]
     });
     let density = risk::density_for_spectral(b.rec.spectral.as_deref());
     Ok(BodyDetail {
-        record: ObjectRecord { covariance: None, ..b.rec.clone() },
+        record: ObjectRecord {
+            covariance: None,
+            ..b.rec.clone()
+        },
         position_au: b.r.to_array(),
         velocity_kms: (b.v * AU_PER_DAY_KMS).to_array(),
         speed_kms: b.v.norm() * AU_PER_DAY_KMS,
@@ -209,7 +228,12 @@ pub async fn set_date(state: State<'_, AppState>, jd: f64) -> Res<()> {
     tauri::async_runtime::spawn_blocking(move || {
         let (jd0, version, states, records) = {
             let s = sim.read();
-            (s.jd, s.version, s.snapshot(), s.bodies.iter().map(|b| b.rec.clone()).collect::<Vec<_>>())
+            (
+                s.jd,
+                s.version,
+                s.snapshot(),
+                s.bodies.iter().map(|b| b.rec.clone()).collect::<Vec<_>>(),
+            )
         };
         if (jd - jd0).abs() <= 60.0 * 365.25 {
             let results = crate::sim::propagate_batch(&states, jd0, jd);
@@ -284,12 +308,23 @@ pub struct LoadResult {
 }
 
 fn persist_catalog(state: &AppState) {
-    let records: Vec<ObjectRecord> = state.sim.read().bodies.iter().map(|b| b.rec.clone()).collect();
+    let records: Vec<ObjectRecord> = state
+        .sim
+        .read()
+        .bodies
+        .iter()
+        .map(|b| b.rec.clone())
+        .collect();
     let _ = state.with_store(|st| st.save_catalog(&records));
 }
 
 #[tauri::command]
-pub async fn load_catalog(state: State<'_, AppState>, preset: CatalogPreset, limit: usize, offset: Option<usize>) -> Res<LoadResult> {
+pub async fn load_catalog(
+    state: State<'_, AppState>,
+    preset: CatalogPreset,
+    limit: usize,
+    offset: Option<usize>,
+) -> Res<LoadResult> {
     let (records, available) = jpl::query_catalog(preset, limit, offset.unwrap_or(0)).await?;
     let ids: Vec<String> = records.iter().map(|r| r.id.clone()).collect();
     let sim = state.sim.clone();
@@ -297,7 +332,12 @@ pub async fn load_catalog(state: State<'_, AppState>, preset: CatalogPreset, lim
         .await
         .map_err(|e| e.to_string())?;
     persist_catalog(&state);
-    Ok(LoadResult { added, total_in_sim: state.sim.read().bodies.len(), available, ids })
+    Ok(LoadResult {
+        added,
+        total_in_sim: state.sim.read().bodies.len(),
+        available,
+        ids,
+    })
 }
 
 #[tauri::command]
@@ -328,12 +368,18 @@ pub fn cached_catalog_info(state: State<AppState>) -> Option<CacheInfo> {
         .with_store(|st| Ok(st.load_catalog()))
         .ok()
         .flatten()
-        .map(|(objs, t)| CacheInfo { objects: objs.len(), saved_unix: t })
+        .map(|(objs, t)| CacheInfo {
+            objects: objs.len(),
+            saved_unix: t,
+        })
 }
 
 #[tauri::command]
 pub async fn restore_cached_catalog(state: State<'_, AppState>) -> Res<usize> {
-    let (records, _) = state.with_store(|st| st.load_catalog().ok_or_else(|| "No saved catalogue".to_string()))?;
+    let (records, _) = state.with_store(|st| {
+        st.load_catalog()
+            .ok_or_else(|| "No saved catalogue".to_string())
+    })?;
     let sim = state.sim.clone();
     tauri::async_runtime::spawn_blocking(move || sim.write().add_records(records))
         .await
@@ -342,17 +388,69 @@ pub async fn restore_cached_catalog(state: State<'_, AppState>) -> Res<usize> {
 
 #[tauri::command]
 pub async fn upcoming_close_approaches(days: u32, dist_max_au: f64) -> Res<Vec<CloseApproach>> {
-    jpl::close_approaches(None, "now", &format!("+{}", days.clamp(1, 3650)), dist_max_au.clamp(0.0005, 0.5)).await
+    jpl::close_approaches(
+        None,
+        "now",
+        &format!("+{}", days.clamp(1, 3650)),
+        dist_max_au.clamp(0.0005, 0.5),
+    )
+    .await
 }
 
 #[tauri::command]
 pub async fn object_close_approaches(designation: String, years: u32) -> Res<Vec<CloseApproach>> {
-    jpl::close_approaches(Some(&designation), "now", &format!("+{}", years.clamp(1, 150) * 365), 0.2).await
+    jpl::close_approaches(
+        Some(&designation),
+        "now",
+        &format!("+{}", years.clamp(1, 150) * 365),
+        0.2,
+    )
+    .await
 }
 
+#[derive(Serialize)]
+pub struct SentryList {
+    pub items: Vec<SentryEntry>,
+    pub fetched_unix: u64,
+    /// True when JPL could not be reached and an older copy is shown.
+    pub stale: bool,
+}
+
+/// Sentry list, cached on disk for a day because the endpoint is slow.
 #[tauri::command]
-pub async fn sentry_list() -> Res<Vec<SentryEntry>> {
-    jpl::sentry_list().await
+pub async fn sentry_list(state: State<'_, AppState>, refresh: bool) -> Res<SentryList> {
+    let cached = state.with_store(|st| Ok(st.load_sentry())).ok().flatten();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    if let Some((t, items)) = &cached {
+        if !refresh && now.saturating_sub(*t) < 86_400 {
+            return Ok(SentryList {
+                items: items.clone(),
+                fetched_unix: *t,
+                stale: false,
+            });
+        }
+    }
+    match jpl::sentry_list().await {
+        Ok(items) => {
+            let _ = state.with_store(|st| st.save_sentry(&items));
+            Ok(SentryList {
+                items,
+                fetched_unix: now,
+                stale: false,
+            })
+        }
+        Err(e) => match cached {
+            Some((t, items)) => Ok(SentryList {
+                items,
+                fetched_unix: t,
+                stale: true,
+            }),
+            None => Err(e),
+        },
+    }
 }
 
 #[tauri::command]
@@ -373,13 +471,30 @@ pub struct ScanSummary {
     pub to_jd: f64,
 }
 
-fn summarize(table: &EphemerisTable, r: Vec3, v: Vec3, t0: f64, t1: f64, thrust: Option<&Thrust>) -> ScanSummary {
+fn summarize(
+    table: &EphemerisTable,
+    r: Vec3,
+    v: Vec3,
+    t0: f64,
+    t1: f64,
+    thrust: Option<&Thrust>,
+) -> ScanSummary {
     let scan = scan_encounters(table, r, v, t0, t1, thrust, 0.05);
-    ScanSummary { impact: scan.impacted, closest: scan.closest, encounters: scan.encounters, from_jd: t0, to_jd: t1 }
+    ScanSummary {
+        impact: scan.impacted,
+        closest: scan.closest,
+        encounters: scan.encounters,
+        from_jd: t0,
+        to_jd: t1,
+    }
 }
 
 #[tauri::command]
-pub async fn scan_approaches(state: State<'_, AppState>, id: String, years: f64) -> Res<ScanSummary> {
+pub async fn scan_approaches(
+    state: State<'_, AppState>,
+    id: String,
+    years: f64,
+) -> Res<ScanSummary> {
     let (r, v, t0, thrust) = {
         let s = state.sim.read();
         let b = s.body(&id).ok_or("Object not found")?;
@@ -402,10 +517,28 @@ pub async fn scan_approaches(state: State<'_, AppState>, id: String, years: f64)
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "method", rename_all = "snake_case")]
 pub enum Deflection {
-    Impulse { dv_ms: f64, rtn: [f64; 3] },
-    KineticImpactor { mass_kg: f64, speed_kms: f64, beta: f64, rtn: [f64; 3] },
-    IonBeam { thrust_n: f64, efficiency: f64, days: f64, rtn: [f64; 3] },
-    GravityTractor { mass_kg: f64, hover_m: f64, days: f64, rtn: [f64; 3] },
+    Impulse {
+        dv_ms: f64,
+        rtn: [f64; 3],
+    },
+    KineticImpactor {
+        mass_kg: f64,
+        speed_kms: f64,
+        beta: f64,
+        rtn: [f64; 3],
+    },
+    IonBeam {
+        thrust_n: f64,
+        efficiency: f64,
+        days: f64,
+        rtn: [f64; 3],
+    },
+    GravityTractor {
+        mass_kg: f64,
+        hover_m: f64,
+        days: f64,
+        rtn: [f64; 3],
+    },
 }
 
 enum Effect {
@@ -417,25 +550,58 @@ const MS2_TO_AU_D2: f64 = DAY_S * DAY_S / (AU_KM * 1000.0);
 
 fn unit3(c: [f64; 3]) -> [f64; 3] {
     let n = (c[0] * c[0] + c[1] * c[1] + c[2] * c[2]).sqrt();
-    if n > 0.0 { [c[0] / n, c[1] / n, c[2] / n] } else { [0.0, 1.0, 0.0] }
+    if n > 0.0 {
+        [c[0] / n, c[1] / n, c[2] / n]
+    } else {
+        [0.0, 1.0, 0.0]
+    }
 }
 
 fn effect_of(d: &Deflection, mass_kg: f64, radius_m: f64, jd: f64) -> Res<Effect> {
     let m = mass_kg.max(1.0);
     Ok(match *d {
-        Deflection::Impulse { dv_ms, rtn } => Effect::Impulse(dv_ms.clamp(-1000.0, 1000.0), unit3(rtn)),
-        Deflection::KineticImpactor { mass_kg: sc, speed_kms, beta, rtn } => {
-            let dv = beta.clamp(1.0, 10.0) * sc.clamp(1.0, 1e7) * speed_kms.clamp(0.1, 100.0) * 1000.0 / m;
+        Deflection::Impulse { dv_ms, rtn } => {
+            Effect::Impulse(dv_ms.clamp(-1000.0, 1000.0), unit3(rtn))
+        }
+        Deflection::KineticImpactor {
+            mass_kg: sc,
+            speed_kms,
+            beta,
+            rtn,
+        } => {
+            let dv =
+                beta.clamp(1.0, 10.0) * sc.clamp(1.0, 1e7) * speed_kms.clamp(0.1, 100.0) * 1000.0
+                    / m;
             Effect::Impulse(dv, unit3(rtn))
         }
-        Deflection::IonBeam { thrust_n, efficiency, days, rtn } => {
+        Deflection::IonBeam {
+            thrust_n,
+            efficiency,
+            days,
+            rtn,
+        } => {
             let a = thrust_n.clamp(0.0, 100.0) * efficiency.clamp(0.0, 1.0) / m;
-            Effect::Thrust(Thrust { accel: a * MS2_TO_AU_D2, rtn: unit3(rtn), start: jd, end: jd + days.clamp(1.0, 36_525.0) })
+            Effect::Thrust(Thrust {
+                accel: a * MS2_TO_AU_D2,
+                rtn: unit3(rtn),
+                start: jd,
+                end: jd + days.clamp(1.0, 36_525.0),
+            })
         }
-        Deflection::GravityTractor { mass_kg: sc, hover_m, days, rtn } => {
+        Deflection::GravityTractor {
+            mass_kg: sc,
+            hover_m,
+            days,
+            rtn,
+        } => {
             let d = radius_m + hover_m.clamp(10.0, 10_000.0);
             let a = 6.674_30e-11 * sc.clamp(1.0, 1e6) / (d * d);
-            Effect::Thrust(Thrust { accel: a * MS2_TO_AU_D2, rtn: unit3(rtn), start: jd, end: jd + days.clamp(1.0, 36_525.0) })
+            Effect::Thrust(Thrust {
+                accel: a * MS2_TO_AU_D2,
+                rtn: unit3(rtn),
+                start: jd,
+                end: jd + days.clamp(1.0, 36_525.0),
+            })
         }
     })
 }
@@ -454,11 +620,23 @@ pub struct DeflectionPlan {
 }
 
 #[tauri::command]
-pub async fn plan_deflection(state: State<'_, AppState>, id: String, deflection: Deflection, years: f64) -> Res<DeflectionPlan> {
+pub async fn plan_deflection(
+    state: State<'_, AppState>,
+    id: String,
+    deflection: Deflection,
+    years: f64,
+) -> Res<DeflectionPlan> {
     let (r, v, t0, thrust, mass, radius_m) = {
         let s = state.sim.read();
         let b = s.body(&id).ok_or("Object not found")?;
-        (b.r, b.v, s.jd, b.thrust, b.mass_kg(), b.rec.effective_diameter_km() * 500.0)
+        (
+            b.r,
+            b.v,
+            s.jd,
+            b.thrust,
+            b.mass_kg(),
+            b.rec.effective_diameter_km() * 500.0,
+        )
     };
     let effect = effect_of(&deflection, mass, radius_m, t0)?;
     let t1 = t0 + years.clamp(0.1, 100.0) * 365.25;
@@ -468,12 +646,22 @@ pub async fn plan_deflection(state: State<'_, AppState>, id: String, deflection:
         let (deflected, dv_ms, accel, dur) = match &effect {
             Effect::Impulse(dv, rtn) => {
                 let dvec = rtn_to_inertial(r, v, *rtn) * (dv / 1000.0 / AU_PER_DAY_KMS);
-                (summarize(&table, r, v + dvec, t0, t1, thrust.as_ref()), dv.abs(), None, None)
+                (
+                    summarize(&table, r, v + dvec, t0, t1, thrust.as_ref()),
+                    dv.abs(),
+                    None,
+                    None,
+                )
             }
             Effect::Thrust(th) => {
                 let a_ms2 = th.accel / MS2_TO_AU_D2;
                 let days = th.end - th.start;
-                (summarize(&table, r, v, t0, t1, Some(th)), a_ms2 * days * DAY_S, Some(a_ms2), Some(days))
+                (
+                    summarize(&table, r, v, t0, t1, Some(th)),
+                    a_ms2 * days * DAY_S,
+                    Some(a_ms2),
+                    Some(days),
+                )
             }
         };
         let target = baseline.closest.clone();
@@ -537,7 +725,10 @@ pub fn apply_deflection(state: State<AppState>, id: String, deflection: Deflecti
 pub enum McMode {
     /// Use the JPL covariance if the object has one.
     Covariance,
-    Isotropic { pos_km: f64, vel_ms: f64 },
+    Isotropic {
+        pos_km: f64,
+        vel_ms: f64,
+    },
 }
 
 #[derive(Serialize)]
@@ -559,9 +750,22 @@ struct McProgressEvent {
 }
 
 #[tauri::command]
-pub async fn run_monte_carlo(app: AppHandle, state: State<'_, AppState>, id: String, samples: usize, years: f64, mode: McMode) -> Res<RiskReport> {
+pub async fn run_monte_carlo(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+    samples: usize,
+    years: f64,
+    mode: McMode,
+) -> Res<RiskReport> {
     // Catalogue presets come without covariance; fetch it on demand.
-    let needs_cov = matches!(mode, McMode::Covariance) && state.sim.read().body(&id).map(|b| b.rec.covariance.is_none()).unwrap_or(false);
+    let needs_cov = matches!(mode, McMode::Covariance)
+        && state
+            .sim
+            .read()
+            .body(&id)
+            .map(|b| b.rec.covariance.is_none())
+            .unwrap_or(false);
     if needs_cov {
         if let Ok(full) = jpl::sbdb_object(&id).await {
             let mut s = state.sim.write();
@@ -583,7 +787,15 @@ pub async fn run_monte_carlo(app: AppHandle, state: State<'_, AppState>, id: Str
         if b.impacted.is_some() {
             return Err("This object has already hit Earth in the simulation".into());
         }
-        (b.r, b.v, s.jd, b.thrust, b.rec.covariance.clone(), b.mass_kg(), b.rec.effective_diameter_km())
+        (
+            b.r,
+            b.v,
+            s.jd,
+            b.thrust,
+            b.rec.covariance.clone(),
+            b.mass_kg(),
+            b.rec.effective_diameter_km(),
+        )
     };
     let samples = samples.clamp(16, 20_000);
     let years = years.clamp(0.1, 50.0);
@@ -597,20 +809,47 @@ pub async fn run_monte_carlo(app: AppHandle, state: State<'_, AppState>, id: Str
         let (app, done, finished) = (app.clone(), done.clone(), finished.clone());
         std::thread::spawn(move || {
             while !finished.load(Ordering::Relaxed) {
-                let _ = app.emit("mc-progress", McProgressEvent { done: done.load(Ordering::Relaxed), total: samples });
+                let _ = app.emit(
+                    "mc-progress",
+                    McProgressEvent {
+                        done: done.load(Ordering::Relaxed),
+                        total: samples,
+                    },
+                );
                 std::thread::sleep(std::time::Duration::from_millis(150));
             }
         });
     }
 
-    let seed = id.bytes().fold(0xC05_u64, |h, b| h.wrapping_mul(31).wrapping_add(b as u64));
+    let seed = id
+        .bytes()
+        .fold(0xC05_u64, |h, b| h.wrapping_mul(31).wrapping_add(b as u64));
     let result = tauri::async_runtime::spawn_blocking(move || {
         let uncertainty = match (&mode, &cov) {
             (McMode::Covariance, Some(c)) => Uncertainty::Covariance(c),
-            (McMode::Covariance, None) => Uncertainty::Isotropic { pos_km: 1000.0, vel_ms: 0.05 },
-            (McMode::Isotropic { pos_km, vel_ms }, _) => Uncertainty::Isotropic { pos_km: pos_km.clamp(0.0, 1e7), vel_ms: vel_ms.clamp(0.0, 1000.0) },
+            (McMode::Covariance, None) => Uncertainty::Isotropic {
+                pos_km: 1000.0,
+                vel_ms: 0.05,
+            },
+            (McMode::Isotropic { pos_km, vel_ms }, _) => Uncertainty::Isotropic {
+                pos_km: pos_km.clamp(0.0, 1e7),
+                vel_ms: vel_ms.clamp(0.0, 1000.0),
+            },
         };
-        let mc = risk::monte_carlo(r, v, t0, years, samples, uncertainty, thrust.as_ref(), seed, McProgress { done: &done, cancel: &cancel });
+        let mc = risk::monte_carlo(
+            r,
+            v,
+            t0,
+            years,
+            samples,
+            uncertainty,
+            thrust.as_ref(),
+            seed,
+            McProgress {
+                done: &done,
+                cancel: &cancel,
+            },
+        );
         let table = EphemerisTable::build(t0, t0 + years * 365.25);
         let nominal = summarize(&table, r, v, t0, t0 + years * 365.25, thrust.as_ref());
         finished.store(true, Ordering::Relaxed);
@@ -620,9 +859,17 @@ pub async fn run_monte_carlo(app: AppHandle, state: State<'_, AppState>, id: Str
     .map_err(|e| e.to_string())?;
 
     let (mc, nominal) = result;
-    let v_inf = nominal.closest.as_ref().map(|c| c.v_inf_kms).unwrap_or(15.0);
+    let v_inf = nominal
+        .closest
+        .as_ref()
+        .map(|c| c.v_inf_kms)
+        .unwrap_or(15.0);
     let energy = risk::impact_energy_mt(mass, v_inf);
-    let years_to = mc.impact_dates.first().map(|jd| (jd - t0) / 365.25).unwrap_or(years);
+    let years_to = mc
+        .impact_dates
+        .first()
+        .map(|jd| (jd - t0) / 365.25)
+        .unwrap_or(years);
     Ok(RiskReport {
         torino: risk::torino(mc.impact_probability, energy),
         palermo: risk::palermo(mc.impact_probability, energy, years_to),
@@ -649,9 +896,19 @@ pub struct EnergyEstimate {
 
 /// Torino/Palermo for an arbitrary probability (used with Sentry numbers).
 #[tauri::command]
-pub fn assess(diameter_km: f64, density: f64, v_inf_kms: f64, ip: f64, years_to_impact: f64) -> EnergyEstimate {
+pub fn assess(
+    diameter_km: f64,
+    density: f64,
+    v_inf_kms: f64,
+    ip: f64,
+    years_to_impact: f64,
+) -> EnergyEstimate {
     let e = risk::impact_energy_mt(risk::mass_kg(diameter_km, density), v_inf_kms);
-    EnergyEstimate { energy_mt: e, torino: risk::torino(ip, e), palermo: risk::palermo(ip, e, years_to_impact) }
+    EnergyEstimate {
+        energy_mt: e,
+        torino: risk::torino(ip, e),
+        palermo: risk::palermo(ip, e, years_to_impact),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -659,14 +916,20 @@ pub fn assess(diameter_km: f64, density: f64, v_inf_kms: f64, ip: f64, years_to_
 // ---------------------------------------------------------------------------
 
 #[tauri::command]
-pub fn save_scenario(state: State<AppState>, name: String, notes: Option<String>) -> Res<ScenarioInfo> {
+pub fn save_scenario(
+    state: State<AppState>,
+    name: String,
+    notes: Option<String>,
+) -> Res<ScenarioInfo> {
     let sc = Scenario::capture(&state.sim.read(), &name, notes.as_deref().unwrap_or(""));
     state.with_store(|st| st.save_scenario(&sc))
 }
 
 #[tauri::command]
 pub fn list_scenarios(state: State<AppState>) -> Vec<ScenarioInfo> {
-    state.with_store(|st| Ok(st.list_scenarios())).unwrap_or_default()
+    state
+        .with_store(|st| Ok(st.list_scenarios()))
+        .unwrap_or_default()
 }
 
 #[tauri::command]
@@ -689,7 +952,8 @@ pub fn export_scenario(state: State<AppState>, name: String) -> Res<String> {
 
 #[tauri::command]
 pub fn import_scenario(state: State<AppState>, json: String) -> Res<String> {
-    let sc: Scenario = serde_json::from_str(&json).map_err(|e| format!("Not a CosmoRisk scenario: {e}"))?;
+    let sc: Scenario =
+        serde_json::from_str(&json).map_err(|e| format!("Not a CosmoRisk scenario: {e}"))?;
     let name = sc.name.clone();
     sc.restore(&mut state.sim.write());
     Ok(name)
@@ -743,13 +1007,14 @@ fn percent_decode(s: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
-/// Geocentric Moon position now (for drawing its orbit around Earth).
+/// The Moon's path around Earth for half a month either side of now, so the
+/// unavoidable gap (the orbit precesses) sits opposite the Moon.
 #[tauri::command]
 pub fn moon_orbit(state: State<AppState>) -> Vec<f64> {
     let jd = state.sim.read().jd;
-    let mut out = Vec::with_capacity(3 * 120);
-    for k in 0..120 {
-        let t = jd + 27.321_661 * k as f64 / 120.0;
+    let mut out = Vec::with_capacity(3 * 121);
+    for k in 0..=120 {
+        let t = jd + 27.321_661 * (k as f64 / 120.0 - 0.5);
         let p = ephemeris::positions(t);
         out.extend_from_slice(&(p[IDX_MOON] - p[IDX_EARTH]).to_array());
     }
@@ -762,16 +1027,28 @@ mod tests {
 
     #[test]
     fn percent_decoding() {
-        assert_eq!(percent_decode("C%3A%5CUsers%5Cm%C3%BC%5Cx.png"), "C:\\Users\\mü\\x.png");
+        assert_eq!(
+            percent_decode("C%3A%5CUsers%5Cm%C3%BC%5Cx.png"),
+            "C:\\Users\\mü\\x.png"
+        );
         assert_eq!(percent_decode("plain"), "plain");
     }
 
     #[test]
     fn kinetic_impactor_dv() {
         // DART-like: 580 kg at 6.1 km/s, beta 3.6 into a 4.3e9 kg body -> ~3 mm/s
-        let Effect::Impulse(dv, _) =
-            effect_of(&Deflection::KineticImpactor { mass_kg: 580.0, speed_kms: 6.1, beta: 3.6, rtn: [0.0, 1.0, 0.0] }, 4.3e9, 80.0, 0.0).unwrap()
-        else {
+        let Effect::Impulse(dv, _) = effect_of(
+            &Deflection::KineticImpactor {
+                mass_kg: 580.0,
+                speed_kms: 6.1,
+                beta: 3.6,
+                rtn: [0.0, 1.0, 0.0],
+            },
+            4.3e9,
+            80.0,
+            0.0,
+        )
+        .unwrap() else {
             panic!()
         };
         assert!(dv > 0.002 && dv < 0.004, "{dv}");

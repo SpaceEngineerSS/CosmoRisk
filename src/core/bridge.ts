@@ -79,7 +79,8 @@ export const api = {
     invoke<CloseApproach[]>('upcoming_close_approaches', { days, distMaxAu }),
   objectApproaches: (designation: string, years: number) =>
     invoke<CloseApproach[]>('object_close_approaches', { designation, years }),
-  sentryList: () => invoke<SentryEntry[]>('sentry_list'),
+  sentryList: (refresh = false) =>
+    invoke<{ items: SentryEntry[]; fetched_unix: number; stale: boolean }>('sentry_list', { refresh }),
   sentryDetail: (designation: string) => invoke<SentryDetail>('sentry_detail', { designation }),
 
   scan: (id: string, years: number) => invoke<ScanSummary>('scan_approaches', { id, years }),

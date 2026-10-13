@@ -2,103 +2,64 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ''
+          - platform: macos-latest
+            args: '--target universal-apple-darwin'
+          - platform: ubuntu-22.04
+            args: ''
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - uses: dtolnay/rust-toolchain@stable
-      - run: npm ci
-      - run: npm run build
-      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
-      - name: Rename for clarity
-        run: mv src-tauri/target/release/cosmorisk.exe src-tauri/target/release/cosmorisk-windows.exe
-        shell: bash
-      - uses: softprops/action-gh-release@v1
-        with:
-          files: src-tauri/target/release/cosmorisk-windows.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install Linux dependencies
+      - name: Linux packages
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-      - run: npm ci
-      - run: npm run build
-      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
-      - name: Rename for clarity
-        run: mv src-tauri/target/release/cosmorisk src-tauri/target/release/cosmorisk-linux
-      - uses: softprops/action-gh-release@v1
-        with:
-          files: src-tauri/target/release/cosmorisk-linux
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-      - uses: dtolnay/rust-toolchain@stable
-      - run: npm ci
-      - run: npm run build
-      - run: cargo build --release --manifest-path src-tauri/Cargo.toml
-      - name: Rename for clarity
-        run: mv src-tauri/target/release/cosmorisk src-tauri/target/release/cosmorisk-macos
-      - uses: softprops/action-gh-release@v1
-        with:
-          files: src-tauri/target/release/cosmorisk-macos
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 20
+          cache: npm
 
-  create-release:
-    needs: [build-windows, build-linux, build-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: softprops/action-gh-release@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          name: 'CosmoRisk ${{ github.ref_name }}'
-          body: |
-            ## CosmoRisk ${{ github.ref_name }}
-            
-            ### What's New
-            - Scientific accuracy improvements
-            - 3D Keplerian orbit visualization  
-            - MOID calculation with 72×72 orbital sampling
-            - Jupiter/Mars/Moon gravitational perturbations
-            
-            ### Download
-            | Platform | File |
-            |----------|------|
-            | Windows | `cosmorisk-windows.exe` |
-            | Linux | `cosmorisk-linux` |
-            | macOS | `cosmorisk-macos` |
-            
-            ### Note
-            - **Windows**: If SmartScreen appears, click "More info" → "Run anyway"
-            - **Linux/macOS**: Run `chmod +x cosmorisk-*` to make executable
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Release notes from CHANGELOG
+        id: notes
+        shell: bash
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          awk -v v="$ver" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > notes.md
+          echo "file=notes.md" >> "$GITHUB_OUTPUT"
+
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: CosmoRisk ${{ github.ref_name }}
+          releaseBodyPath: notes.md
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

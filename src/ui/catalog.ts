@@ -1,7 +1,7 @@
 // Left rail: loaded catalogue, upcoming close approaches, Sentry list.
 
 import { animate } from 'motion';
-import { ctx, isBusy, loadDesignation, loadPreset, refreshBodies, removeBodies, selectBody } from '../app';
+import { ctx, isBusy, loadDesignation, loadPreset, refreshBodies, removeBodies, selectBody, setBusy } from '../app';
 import { api, errorText } from '../core/bridge';
 import { t, type Key } from '../core/i18n';
 import { settings } from '../core/settings';
@@ -30,6 +30,7 @@ let approaches: CloseApproach[] | null = null;
 let approachDays = 60;
 let approachLd = 5;
 let sentry: SentryEntry[] | null = null;
+let sentryMeta: { fetched: number; stale: boolean } | null = null;
 let sentryError = '';
 let approachError = '';
 
@@ -86,7 +87,7 @@ export function mountCatalog(host: HTMLElement) {
       fetchApproaches();
     },
     'appr-refresh': () => fetchApproaches(),
-    'sentry-refresh': () => fetchSentry(),
+    'sentry-refresh': () => fetchSentry(true),
     'open-des': (el) => loadDesignation(el.dataset.des!),
     'pick-row': (el) => selectBody(el.dataset.id!, true),
   });
@@ -97,9 +98,7 @@ export function mountCatalog(host: HTMLElement) {
     renderRestore();
   });
   bus.on('select', () => paintRows());
-  bus.on('busy', ({ key }) => {
-    if (key === 'catalog' || key === 'lookup') renderBusy();
-  });
+  bus.on('busy', () => renderBusy());
   bus.on('lang', () => render());
 }
 
@@ -313,8 +312,7 @@ function onListKey(e: KeyboardEvent) {
 
 async function fetchApproaches() {
   approachError = '';
-  approaches = approaches ?? null;
-  bus.emit('busy', { key: 'approaches', busy: true });
+  setBusy('approaches', true);
   const pane = root.querySelector('#cat-pane') as HTMLElement | null;
   if (tab === 'approaches' && pane) renderApproaches(pane);
   try {
@@ -323,10 +321,9 @@ async function fetchApproaches() {
     approachError = errorText(e);
     approaches = [];
   } finally {
-    bus.emit('busy', { key: 'approaches', busy: false });
+    setBusy('approaches', false);
     const p = root.querySelector('#cat-pane') as HTMLElement | null;
     if (tab === 'approaches' && p) renderApproaches(p);
-    renderBusy();
   }
 }
 
@@ -382,20 +379,20 @@ function renderApproaches(pane: HTMLElement) {
 
 // ------------------------------------------------------------------- sentry
 
-async function fetchSentry() {
+async function fetchSentry(refresh = false) {
   sentryError = '';
-  bus.emit('busy', { key: 'sentry', busy: true });
-  renderBusy();
+  setBusy('sentry', true);
   try {
-    sentry = await api.sentryList();
+    const r = await api.sentryList(refresh);
+    sentry = r.items;
+    sentryMeta = { fetched: r.fetched_unix, stale: r.stale };
   } catch (e) {
     sentryError = errorText(e);
     sentry = [];
   } finally {
-    bus.emit('busy', { key: 'sentry', busy: false });
+    setBusy('sentry', false);
     const p = root.querySelector('#cat-pane') as HTMLElement | null;
     if (tab === 'sentry' && p) renderSentry(p);
-    renderBusy();
   }
 }
 
@@ -407,6 +404,7 @@ function renderSentry(pane: HTMLElement) {
     </div>
     <div class="scroll table-rows" id="sentry-list"></div>
     <div class="foot"><span>${sentry ? t('sentry.foot', { n: sentry.length }) : ''}</span><span class="sp"></span>
+      <span>${sentryMeta ? `${sentryMeta.stale ? t('sentry.stale') : ''}${new Date(sentryMeta.fetched * 1000).toLocaleDateString(settings.lang === 'tr' ? 'tr-TR' : 'en-GB')}` : ''}</span>
       <button class="btn ghost sm icon" data-act="sentry-refresh" aria-label="${t('common.refresh')}">${raw(icon('refresh'))}</button></div>`;
   const host = $('#sentry-list', pane);
   if (sentryError) {
@@ -414,7 +412,7 @@ function renderSentry(pane: HTMLElement) {
     return;
   }
   if (!sentry) {
-    host.innerHTML = `<div class="empty">${esc(t('common.loading'))}</div>`;
+    host.innerHTML = `<div class="empty">${esc(t('sentry.loading'))}</div>`;
     return;
   }
   // Render the top 400 by Palermo; the full list is thousands of tiny objects.

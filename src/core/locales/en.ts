@@ -101,6 +101,8 @@ const en = {
   'sentry.note': 'JPL Sentry: objects with a non-zero impact probability in the next 100 years, sorted by Palermo scale. Click to load.',
   'sentry.ip': 'Probability',
   'sentry.foot': '{n} objects on the list',
+  'sentry.stale': 'offline copy · ',
+  'sentry.loading': 'Fetching the risk list from JPL. The service is slow and this can take up to a minute; the list is then kept for a day.',
   'sentry.official': 'JPL Sentry assessment',
   'sentry.ipCum': 'Cumulative probability',
   'sentry.psCum': 'Palermo (cumulative)',

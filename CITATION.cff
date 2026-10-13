@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "CosmoRisk: High-Fidelity NEO Defense Simulator"
+title: "CosmoRisk: a near-Earth asteroid simulator"
 message: "If you use this software, please cite it as below."
 type: software
 authors:
@@ -9,28 +9,24 @@ authors:
 repository-code: "https://github.com/SpaceEngineerSS/CosmoRisk"
 url: "https://spacegumus.com.tr"
 abstract: >-
-  A physics-accurate Near-Earth Object (NEO) tracking and deflection simulator
-  featuring N-Body gravity with Jupiter/Mars/Moon perturbations, Velocity Verlet integration,
-  NASA NeoWs API integration, kinetic impactor and ion beam deflection methods,
-  Monte Carlo impact probability analysis, and advanced perturbation effects
-  including Yarkovsky thermal recoil, J2 oblateness, and Solar Radiation Pressure.
-  Features accurate 3D Keplerian orbit visualization with inclination/RAAN/argument of perihelion,
-  MOID calculator using 72×72 point orbital sampling, Torino Scale assessment,
-  asteroid comparison table, and educational content including tutorials and glossary.
+  A desktop simulator for near-Earth asteroids. Real orbits, physical data and
+  covariances are loaded from the NASA/JPL Small-Body Database and propagated
+  with RK4 under the Sun, eight planets and the Moon (VSOP87 Earth, JPL
+  approximate planetary elements). It finds Earth close approaches, estimates
+  impact probability by Monte Carlo sampling of the orbit covariance with
+  Torino and Palermo ratings, and simulates kinetic impactor, ion beam and
+  gravity tractor deflection with target-plane analysis.
 keywords:
   - near-earth-objects
-  - asteroid-deflection
-  - n-body-simulation
   - planetary-defense
   - orbital-mechanics
-  - physics-simulation
-  - keplerian-orbits
-  - moid-calculation
+  - asteroid-deflection
+  - monte-carlo
+  - torino-scale
+  - palermo-scale
   - tauri
   - rust
   - three.js
-  - monte-carlo
-  - torino-scale
 license: MIT
-version: 2.0.1
-date-released: "2025-12-18"
+version: 3.0.0
+date-released: "2026-10-13"

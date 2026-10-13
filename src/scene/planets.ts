@@ -31,6 +31,8 @@ export interface Palette {
   orbitEarth: THREE.Color;
   grid: THREE.Color;
   marker: THREE.Color;
+  /** Line opacity; paper needs more ink than night. */
+  ink: number;
 }
 
 export class Planets {
@@ -39,7 +41,7 @@ export class Planets {
   readonly meshes: THREE.Mesh[] = [];
   readonly markers = new MarkerLayer(12, 5);
   readonly orbits = new THREE.Group();
-  readonly moonOrbit: THREE.LineLoop;
+  readonly moonOrbit: THREE.Line;
   readonly grid = new THREE.Group();
   readonly positions: THREE.Vector3[] = PLANET_IDS.map(() => new THREE.Vector3());
   readonly sunLight: THREE.PointLight;
@@ -59,9 +61,11 @@ export class Planets {
     this.sun.name = 'sun';
     this.group.add(this.sun);
 
-    this.sunLight = new THREE.PointLight(0xffffff, 2.6, 0, 0);
+    // No distance falloff: every planet is lit as if at its own 1 AU, with
+    // some exposure so dark ocean albedo still reads on screen.
+    this.sunLight = new THREE.PointLight(0xffffff, 5.5, 0, 0);
     this.group.add(this.sunLight);
-    this.group.add(new THREE.AmbientLight(0xffffff, 0.06));
+    this.group.add(new THREE.AmbientLight(0xffffff, 0.09));
 
     for (const id of PLANET_IDS) {
       const mat = new THREE.MeshLambertMaterial({ color: TONES[id] });
@@ -81,7 +85,7 @@ export class Planets {
     ring.rotation.x = -Math.PI / 2 + THREE.MathUtils.degToRad(26.7);
     saturn.add(ring);
 
-    this.moonOrbit = new THREE.LineLoop(new THREE.BufferGeometry(), this.moonOrbitMaterial);
+    this.moonOrbit = new THREE.Line(new THREE.BufferGeometry(), this.moonOrbitMaterial);
     this.group.add(this.orbits, this.moonOrbit, this.grid, this.markers.points);
     this.buildGrid();
   }
@@ -171,6 +175,10 @@ export class Planets {
     this.earthOrbitMaterial.color.copy(p.orbitEarth);
     this.moonOrbitMaterial.color.copy(p.orbit);
     this.gridMaterial.color.copy(p.grid);
+    this.orbitMaterial.opacity = 0.35 * p.ink;
+    this.earthOrbitMaterial.opacity = Math.min(1, 0.55 * p.ink);
+    this.moonOrbitMaterial.opacity = Math.min(1, 0.4 * p.ink);
+    this.gridMaterial.opacity = 0.18 * p.ink;
     for (let i = 0; i <= PLANET_IDS.length; i++) {
       const c = markerColors[i] ?? p.marker;
       this.markers.colors[i * 3] = c.r;

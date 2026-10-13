@@ -353,7 +353,9 @@ function wireInput(view: View) {
       if (state.selected) selectBody(null);
       return;
     }
-    if (typing || isModalOpen() || isPaletteOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+    // AltGr arrives as Ctrl+Alt on Windows; layouts such as Turkish Q need it for [ and ].
+    const altGr = e.getModifierState?.('AltGraph') ?? false;
+    if (typing || isModalOpen() || isPaletteOpen() || (!altGr && (e.ctrlKey || e.metaKey || e.altKey))) return;
     const k = e.key;
     const handled = (() => {
       switch (k) {
@@ -361,9 +363,12 @@ function wireInput(view: View) {
           setPaused(!(state.frame?.paused ?? true));
           return true;
         case '[':
+        case '-':
           stepRate(-1);
           return true;
         case ']':
+        case '+':
+        case '=':
           stepRate(1);
           return true;
         case 'r':

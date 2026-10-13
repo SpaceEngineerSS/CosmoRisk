@@ -178,7 +178,7 @@ export class View {
     const c = (x: number) => new THREE.Color(x);
     this.scene.background = c(p.background);
     this.planets.setPalette(
-      { orbit: c(p.orbit), orbitEarth: c(p.orbitEarth), grid: c(p.grid), marker: c(p.marker) },
+      { orbit: c(p.orbit), orbitEarth: c(p.orbitEarth), grid: c(p.grid), marker: c(p.marker), ink: theme === 'light' ? 1.9 : 1 },
       [...PLANET_IDS.map((id) => (id === 'earth' ? c(p.orbitEarth) : c(p.marker))), c(p.sun)],
     );
     this.asteroids.setPalette({

@@ -19,13 +19,30 @@ pub struct Elements {
 
 impl Elements {
     /// Build from perihelion-based elements (the form JPL uses for covariances).
-    pub fn from_perihelion(e: f64, q: f64, tp: f64, node: f64, peri: f64, i: f64, epoch: f64, mu: f64) -> Option<Self> {
+    pub fn from_perihelion(
+        e: f64,
+        q: f64,
+        tp: f64,
+        node: f64,
+        peri: f64,
+        i: f64,
+        epoch: f64,
+        mu: f64,
+    ) -> Option<Self> {
         if !(0.0..1.0).contains(&e) || q <= 0.0 {
             return None;
         }
         let a = q / (1.0 - e);
         let n = (mu / (a * a * a)).sqrt();
-        Some(Self { a, e, i, node, peri, m: wrap_angle(n * (epoch - tp)), epoch })
+        Some(Self {
+            a,
+            e,
+            i,
+            node,
+            peri,
+            m: wrap_angle(n * (epoch - tp)),
+            epoch,
+        })
     }
 
     /// Mean motion in rad/day.
@@ -39,8 +56,14 @@ impl Elements {
     }
 
     pub fn is_valid(&self) -> bool {
-        self.a.is_finite() && self.a > 0.0 && (0.0..1.0).contains(&self.e) && self.i.is_finite()
-            && self.node.is_finite() && self.peri.is_finite() && self.m.is_finite() && self.epoch.is_finite()
+        self.a.is_finite()
+            && self.a > 0.0
+            && (0.0..1.0).contains(&self.e)
+            && self.i.is_finite()
+            && self.node.is_finite()
+            && self.peri.is_finite()
+            && self.m.is_finite()
+            && self.epoch.is_finite()
     }
 
     /// State vector at `jd`, propagating the mean anomaly on the two-body orbit.
@@ -85,7 +108,11 @@ impl Elements {
         let r22 = -so * sw + co * cw * ci;
         let r31 = sw * si;
         let r32 = cw * si;
-        Vec3::new(r11 * p.x + r12 * p.y, r21 * p.x + r22 * p.y, r31 * p.x + r32 * p.y)
+        Vec3::new(
+            r11 * p.x + r12 * p.y,
+            r21 * p.x + r22 * p.y,
+            r31 * p.x + r32 * p.y,
+        )
     }
 
     /// Osculating elements from a heliocentric state. Returns `None` for
@@ -111,7 +138,11 @@ impl Elements {
         let nvec = Vec3::new(-h.y, h.x, 0.0);
         let nn = nvec.norm();
 
-        let node = if nn > 1e-14 { wrap_angle(nvec.y.atan2(nvec.x)) } else { 0.0 };
+        let node = if nn > 1e-14 {
+            wrap_angle(nvec.y.atan2(nvec.x))
+        } else {
+            0.0
+        };
         let peri = if e > 1e-12 {
             if nn > 1e-14 {
                 let mut w = (nvec.dot(evec) / (nn * e)).clamp(-1.0, 1.0).acos();
@@ -150,7 +181,15 @@ impl Elements {
         let ea = 2.0 * (((1.0 - e) / (1.0 + e)).sqrt() * (nu / 2.0).tan()).atan();
         let m = wrap_angle(ea - e * ea.sin());
 
-        Some(Self { a, e, i, node, peri, m, epoch })
+        Some(Self {
+            a,
+            e,
+            i,
+            node,
+            peri,
+            m,
+            epoch,
+        })
     }
 }
 
@@ -158,7 +197,13 @@ impl Elements {
 /// Newton iterations with a starting guess that converges for all e < 1.
 pub fn solve_kepler(m: f64, e: f64) -> f64 {
     let m = wrap_angle_pm(m);
-    let mut ea = if e < 0.8 { m + e * m.sin() } else if m >= 0.0 { PI } else { -PI };
+    let mut ea = if e < 0.8 {
+        m + e * m.sin()
+    } else if m >= 0.0 {
+        PI
+    } else {
+        -PI
+    };
     for _ in 0..60 {
         let f = ea - e * ea.sin() - m;
         let fp = 1.0 - e * ea.cos();
@@ -174,7 +219,11 @@ pub fn solve_kepler(m: f64, e: f64) -> f64 {
 /// Wrap to [0, 2π).
 pub fn wrap_angle(x: f64) -> f64 {
     let r = x.rem_euclid(TAU);
-    if r >= TAU { 0.0 } else { r }
+    if r >= TAU {
+        0.0
+    } else {
+        r
+    }
 }
 
 /// Wrap to [-π, π).
@@ -201,7 +250,15 @@ mod tests {
 
     #[test]
     fn elements_round_trip() {
-        let el = Elements { a: 1.458, e: 0.2229, i: 0.189, node: 5.31, peri: 3.12, m: 1.09, epoch: 2461200.5 };
+        let el = Elements {
+            a: 1.458,
+            e: 0.2229,
+            i: 0.189,
+            node: 5.31,
+            peri: 3.12,
+            m: 1.09,
+            epoch: 2461200.5,
+        };
         let (r, v) = el.state_at(el.epoch, GM_SUN);
         let back = Elements::from_state(r, v, GM_SUN, el.epoch).unwrap();
         assert!((back.a - el.a).abs() < 1e-10);
@@ -215,9 +272,27 @@ mod tests {
     #[test]
     fn perihelion_form_matches_mean_anomaly_form() {
         let mu = GM_SUN;
-        let el = Elements { a: 0.9224, e: 0.1911, i: 0.0583, node: 3.5586, peri: 2.2110, m: 0.0, epoch: 2461000.5 };
+        let el = Elements {
+            a: 0.9224,
+            e: 0.1911,
+            i: 0.0583,
+            node: 3.5586,
+            peri: 2.2110,
+            m: 0.0,
+            epoch: 2461000.5,
+        };
         let tp = el.epoch - 10.0;
-        let from_q = Elements::from_perihelion(el.e, el.a * (1.0 - el.e), tp, el.node, el.peri, el.i, el.epoch, mu).unwrap();
+        let from_q = Elements::from_perihelion(
+            el.e,
+            el.a * (1.0 - el.e),
+            tp,
+            el.node,
+            el.peri,
+            el.i,
+            el.epoch,
+            mu,
+        )
+        .unwrap();
         let expected_m = el.mean_motion(mu) * 10.0;
         assert!((from_q.m - expected_m).abs() < 1e-12);
     }

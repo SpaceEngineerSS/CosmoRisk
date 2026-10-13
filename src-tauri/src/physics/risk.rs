@@ -74,15 +74,33 @@ pub fn torino(ip: f64, energy_mt: f64) -> u8 {
         return 0;
     }
     let le = energy_mt.log10();
-    let class = if le < 3.0 { 0 } else if le < 5.0 { 1 } else { 2 };
+    let class = if le < 3.0 {
+        0
+    } else if le < 5.0 {
+        1
+    } else {
+        2
+    };
     if ip >= 0.99 {
         return [8, 9, 10][class];
     }
     if ip >= 0.01 {
         return match class {
             0 => 3,
-            1 => if ip < 0.1 { 4 } else { 5 },
-            _ => if ip < 0.1 { 6 } else { 7 },
+            1 => {
+                if ip < 0.1 {
+                    4
+                } else {
+                    5
+                }
+            }
+            _ => {
+                if ip < 0.1 {
+                    6
+                } else {
+                    7
+                }
+            }
         };
     }
     let h = ip.log10() + 0.8 * le;
@@ -145,12 +163,30 @@ impl Covariance {
                 x[i] += l[i][k] * z[k];
             }
         }
-        Elements::from_perihelion(x[0], x[1], x[2], x[3].to_radians(), x[4].to_radians(), x[5].to_radians(), self.epoch, GM_SUN)
+        Elements::from_perihelion(
+            x[0],
+            x[1],
+            x[2],
+            x[3].to_radians(),
+            x[4].to_radians(),
+            x[5].to_radians(),
+            self.epoch,
+            GM_SUN,
+        )
     }
 
     pub fn nominal_elements(&self) -> Option<Elements> {
         let x = self.nominal;
-        Elements::from_perihelion(x[0], x[1], x[2], x[3].to_radians(), x[4].to_radians(), x[5].to_radians(), self.epoch, GM_SUN)
+        Elements::from_perihelion(
+            x[0],
+            x[1],
+            x[2],
+            x[3].to_radians(),
+            x[4].to_radians(),
+            x[5].to_radians(),
+            self.epoch,
+            GM_SUN,
+        )
     }
 }
 
@@ -261,8 +297,16 @@ pub fn monte_carlo(
             }
             let scan = scan_encounters(&table, r, v, t_now, t_end, thrust, 0.0);
             progress.done.fetch_add(1, Ordering::Relaxed);
-            let min_km = scan.closest.as_ref().map(|c| c.dist_km).unwrap_or(f64::INFINITY);
-            let impact = if scan.impacted { scan.encounters.last().map(|e| e.jd) } else { None };
+            let min_km = scan
+                .closest
+                .as_ref()
+                .map(|c| c.dist_km)
+                .unwrap_or(f64::INFINITY);
+            let impact = if scan.impacted {
+                scan.encounters.last().map(|e| e.jd)
+            } else {
+                None
+            };
             Some((min_km, impact))
         })
         .collect();
@@ -288,7 +332,11 @@ pub fn monte_carlo(
         years,
         impact_dates,
         min_km: dists.first().copied().unwrap_or(f64::NAN),
-        median_km: if dists.is_empty() { f64::NAN } else { dists[dists.len() / 2] },
+        median_km: if dists.is_empty() {
+            f64::NAN
+        } else {
+            dists[dists.len() / 2]
+        },
         min_distances_km: dists,
         cancelled,
     }
@@ -369,7 +417,15 @@ mod tests {
 
     #[test]
     fn isotropic_monte_carlo_returns_finite_numbers() {
-        let el = Elements { a: 1.3, e: 0.3, i: 0.1, node: 1.0, peri: 2.0, m: 0.5, epoch: 2_461_300.5 };
+        let el = Elements {
+            a: 1.3,
+            e: 0.3,
+            i: 0.1,
+            node: 1.0,
+            peri: 2.0,
+            m: 0.5,
+            epoch: 2_461_300.5,
+        };
         let (r, v) = el.state_at(el.epoch, GM_SUN);
         let done = AtomicUsize::new(0);
         let cancel = AtomicBool::new(false);
@@ -379,10 +435,16 @@ mod tests {
             el.epoch,
             1.0,
             32,
-            Uncertainty::Isotropic { pos_km: 1000.0, vel_ms: 0.1 },
+            Uncertainty::Isotropic {
+                pos_km: 1000.0,
+                vel_ms: 0.1,
+            },
             None,
             7,
-            McProgress { done: &done, cancel: &cancel },
+            McProgress {
+                done: &done,
+                cancel: &cancel,
+            },
         );
         assert_eq!(res.samples, 32);
         assert!(res.min_km.is_finite() && res.min_km > 0.0);

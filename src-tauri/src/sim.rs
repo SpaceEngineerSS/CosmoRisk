@@ -38,14 +38,22 @@ pub struct SimBody {
 
 impl SimBody {
     pub fn mass_kg(&self) -> f64 {
-        risk::mass_kg(self.rec.effective_diameter_km(), risk::density_for_spectral(self.rec.spectral.as_deref()))
+        risk::mass_kg(
+            self.rec.effective_diameter_km(),
+            risk::density_for_spectral(self.rec.spectral.as_deref()),
+        )
     }
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SimEvent {
-    Impact { id: String, name: String, jd: f64, v_kms: f64 },
+    Impact {
+        id: String,
+        name: String,
+        jd: f64,
+        v_kms: f64,
+    },
 }
 
 pub struct Sim {
@@ -109,7 +117,14 @@ impl Sim {
                     }
                 }
                 None => {
-                    self.bodies.push(SimBody { rec, r, v, thrust: None, impacted: None, delta_v_ms: 0.0 });
+                    self.bodies.push(SimBody {
+                        rec,
+                        r,
+                        v,
+                        thrust: None,
+                        impacted: None,
+                        delta_v_ms: 0.0,
+                    });
                     added += 1;
                 }
             }
@@ -235,12 +250,21 @@ pub fn propagate_batch(states: &[BodyState], jd0: f64, jd1: f64) -> Vec<StepResu
 
 impl Sim {
     pub fn snapshot(&self) -> Vec<BodyState> {
-        self.bodies.iter().map(|b| (b.r, b.v, b.thrust, b.impacted.is_some())).collect()
+        self.bodies
+            .iter()
+            .map(|b| (b.r, b.v, b.thrust, b.impacted.is_some()))
+            .collect()
     }
 
     /// Write integrated states back. Returns false if the simulation changed
     /// underneath (bodies added/removed, clock moved) and nothing was applied.
-    pub fn apply_batch(&mut self, version: u32, jd0: f64, jd1: f64, results: Vec<StepResult>) -> bool {
+    pub fn apply_batch(
+        &mut self,
+        version: u32,
+        jd0: f64,
+        jd1: f64,
+        results: Vec<StepResult>,
+    ) -> bool {
         if self.version != version || self.jd != jd0 || self.bodies.len() != results.len() {
             return false;
         }
@@ -253,14 +277,23 @@ impl Sim {
             b.r = r;
             b.v = v;
             if let Some(th) = &b.thrust {
-                let past = if forward { jd1 > th.end.max(th.start) } else { jd1 < th.start.min(th.end) };
+                let past = if forward {
+                    jd1 > th.end.max(th.start)
+                } else {
+                    jd1 < th.start.min(th.end)
+                };
                 if past {
                     b.thrust = None;
                 }
             }
             if let Some((t, vk)) = hit {
                 b.impacted = Some(t);
-                events.push(SimEvent::Impact { id: b.rec.id.clone(), name: b.rec.name.clone(), jd: t, v_kms: vk });
+                events.push(SimEvent::Impact {
+                    id: b.rec.id.clone(),
+                    name: b.rec.name.clone(),
+                    jd: t,
+                    v_kms: vk,
+                });
             }
         }
         self.jd = jd1;

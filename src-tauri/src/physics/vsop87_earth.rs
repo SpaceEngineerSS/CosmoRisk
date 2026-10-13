@@ -3,7 +3,11 @@
 //! keeping terms with amplitude >= 1e-8 (about 1.5 km in R, 2 mas in L, B).
 //! Each term is (A, B, C): A * cos(B + C * t), t in Julian millennia from J2000.
 
-#![allow(clippy::excessive_precision, clippy::unreadable_literal, clippy::approx_constant)]
+#![allow(
+    clippy::excessive_precision,
+    clippy::unreadable_literal,
+    clippy::approx_constant
+)]
 
 const L0: [(f64, f64, f64); 221] = [
     (1.75347045673, 0.0, 0.0),
@@ -358,8 +362,7 @@ const L4: [(f64, f64, f64); 2] = [
     (7.714e-08, 4.14117321449, 6283.0758499914),
     (1.016e-08, 3.27573644241, 12566.1516999828),
 ];
-const L5: [(f64, f64, f64); 0] = [
-];
+const L5: [(f64, f64, f64); 0] = [];
 pub const L: [&[(f64, f64, f64)]; 6] = [&L0, &L1, &L2, &L3, &L4, &L5];
 
 const B0: [(f64, f64, f64); 54] = [
@@ -461,11 +464,8 @@ const B3: [(f64, f64, f64); 3] = [
     (1.7034e-07, 3.14159265359, 0.0),
     (3.617e-08, 0.11750575325, 12566.1516999828),
 ];
-const B4: [(f64, f64, f64); 1] = [
-    (5.745e-08, 2.26734029843, 6283.0758499914),
-];
-const B5: [(f64, f64, f64); 0] = [
-];
+const B4: [(f64, f64, f64); 1] = [(5.745e-08, 2.26734029843, 6283.0758499914)];
+const B5: [(f64, f64, f64); 0] = [];
 pub const B: [&[(f64, f64, f64)]; 6] = [&B0, &B1, &B2, &B3, &B4, &B5];
 
 const R0: [(f64, f64, f64); 152] = [
@@ -688,10 +688,6 @@ const R3: [(f64, f64, f64); 2] = [
     (1.44595e-06, 4.27319433901, 6283.0758499914),
     (6.729e-08, 3.91706261708, 12566.1516999828),
 ];
-const R4: [(f64, f64, f64); 1] = [
-    (3.858e-08, 2.56389016346, 6283.0758499914),
-];
-const R5: [(f64, f64, f64); 0] = [
-];
+const R4: [(f64, f64, f64); 1] = [(3.858e-08, 2.56389016346, 6283.0758499914)];
+const R5: [(f64, f64, f64); 0] = [];
 pub const R: [&[(f64, f64, f64)]; 6] = [&R0, &R1, &R2, &R3, &R4, &R5];
-

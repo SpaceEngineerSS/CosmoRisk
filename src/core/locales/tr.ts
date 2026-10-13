@@ -96,6 +96,8 @@ const tr: Record<keyof typeof en, string> = {
   'sentry.note': 'JPL Sentry: önümüzdeki 100 yılda çarpma olasılığı sıfır olmayan cisimler, Palermo ölçeğine göre sıralı. Yüklemek için tıklayın.',
   'sentry.ip': 'Olasılık',
   'sentry.foot': 'Listede {n} cisim',
+  'sentry.stale': 'çevrimdışı kopya · ',
+  'sentry.loading': "Risk listesi JPL'den alınıyor. Servis yavaş, bir dakikayı bulabilir; liste sonrasında bir gün saklanır.",
   'sentry.official': 'JPL Sentry değerlendirmesi',
   'sentry.ipCum': 'Toplam olasılık',
   'sentry.psCum': 'Palermo (toplam)',

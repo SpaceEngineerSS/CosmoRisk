@@ -160,7 +160,7 @@ export async function openScenarios() {
 
 const SHORTCUTS: [string, string][] = [
   ['Space', 'help.k.play'],
-  ['[  ]', 'help.k.rate'],
+  ['[  ]  or  −  +', 'help.k.rate'],
   ['R', 'help.k.reverse'],
   ['N', 'help.k.now'],
   ['1 · 2 · 3', 'help.k.views'],
